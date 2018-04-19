@@ -61,10 +61,10 @@ z1f	rmb	3	; jmp to ?
 z22	rmb	2
 z24	rmb	1
 	rmb	1
-vkey	rmb	2	; KEY vector
-vemit	rmb	2	; EMIT vector
-z2a	rmb	2	; ? vector
-	rmb	2
+v_key	rmb	2	; 'KEY vector
+v_emit	rmb	2	; 'EMIT vector
+v_abort	rmb	2	; 'ABORT vector
+z2c	rmb	2
 jnmi	rmb	3	; jmp to NMI handler
 z31	rmb	1
 z32	rmb	1
@@ -174,6 +174,9 @@ d0274	equ	$0274
 d0278	equ	$0278
 d027a	equ	$027a
 d027b	equ	$027b
+d027c	equ	$027c
+d027d	equ	$027d
+d027e	equ	$027e
 d0280	equ	$0280
 d0281	equ	$0281
 d0282	equ	$0282
@@ -231,6 +234,7 @@ d8000	equ	$8000
 ; tag table 0 (short tags $00..$bf)
 	tt_start $00
 
+tag_table_0:
 	def_tag	exit		; EXIT
 	def_tag	esc1
 	def_tag	esc2
@@ -1718,7 +1722,7 @@ Lcb2c:	plp
 	cmp	#$43
 	rts
 
-Scb33:	jmp	(z2a)
+Scb33:	jmp	(v_abort)
 
 Lcb36:	sta	z3f
 	pla
@@ -1869,40 +1873,50 @@ Lcc15:	and	#$7f
 	jsr	Sce1a
 	jmp	Lcc12
 
-Lcc25:	lda	z17
+next2:	lda	z17		; one of the locations next jumps to
+
 	jsr	Scc02
-	lda	#$2e
+
+	lda	#$2e		; make next point to next1
 	sta	next+1
-Lcc2e:	ldy	z66
+
+next1:	ldy	z66
 	bne	Lcc86
-Lcc32:	lda	(z15),y
+
+Lcc32:	lda	(z15),y		; Y always zero here!
 	inc	z15
 	beq	Lcc81
 
 Lcc38:	asl
 	bcs	Lcc40
-	sta	ivect1+1
+
+	sta	ivect1+1	; handle $00..$7f
 	jmp	ivect1
 
 Lcc40:	cmp	#$80
 	bcs	Lcc49
-	sta	ivect2+1
+
+	sta	ivect2+1	; handle $80..$bf
 	jmp	ivect2
 
-Lcc49:	sbc	#$80
+Lcc49:	sbc	#$80		; handle $c0..$ff - short tags not in mainframe
 	clc
 Lcc4c:	adc	d021b,y
 	sta	z0c+1
 	lda	#$00
 Lcc53:	adc	d021c,y
 	sta	z0c+2
+
 	lda	d021d,y
 	beq	Lcc68
 	cmp	z17
 	beq	Lcc68
+
 	jsr	Scc02
-	lda	#$25
+
+	lda	#next2&$ff	; make next point to next2
 	sta	next+1
+
 Lcc68:	ldy	#$00
 	lda	z0c+1
 	cmp	#$ff
@@ -1921,7 +1935,6 @@ Lcc73:	lda	(z0c+1),y
 Lcc81:	inc	z15+1
 	jmp	Lcc38
 
-; XXX disassemble
 Lcc86:	ldy	#$00
 	lda	D020d
 	bne	Lcc32
@@ -1969,7 +1982,7 @@ Lccd1:	jsr	Sc38b
 	pla
 	tax
 	dec	D020d
-	jmp	Lcc2e
+	jmp	next1		; why doesn't this jump to next (zero page)?
 
 Lcce4:	plp
 	stx	z62
@@ -2925,16 +2938,32 @@ Ld285:	inx
 
 x_bounds:
 	fcb	$00	; BOUNDS
-	fcb	$1c,$3d,$22
+	tag	over		; OVER + SWAP
+	tag	plus
+	tag	swap
 
 x_query_range:
 	fcb	$00	; ?RANGE
-	fcb	$23,$1c,$4b,$1c,$24,$4b,$3a,$28
+	tag	to_r		; >R OVER > OVER R> > OR NOT
+	tag	over
+	tag	greater_than
+	tag	over
+	tag	r_to
+	tag	greater_than
+	tag	or
+	tag	not
 
 x_bin_to_ascii:
 	fcb	$00	; B>A
-	fcb	$36,$3d,$1b,$14,$39,$4b,$4c,$03
-	fcb	$2c,$3d
+	tag	30h
+	tag	plus
+	tag	dup
+	literal	'9'
+	tag	greater_than
+	tag	p_if
+	fcb	$03
+	tag	7
+	tag	plus
 
 x_lower_to_upper:
 	fcb	$00	; L>U
@@ -3196,20 +3225,29 @@ x_ud_min:
 
 x_dabs:
 	fcb	$00	; DABS
-	fcb	$1b,$29,$4c,$03		; DUP 0< (IF) ofs=3
-	fcb	$01,$22			;   DNEGA
+	tag	dup			; DUP 0< IF DNEGATE THEN
+	tag	0_less_than
+	tag	p_if
+	fcb	$03
+	tag	dnegate
 
 x_max:
 	fcb	$00	; MAX
-	fcb	$5d,$51,$02		; 2DUP (<IF) ofs=2
-	fcb	$22			;   SWAP
-	fcb	$0f			; DROP
+	tag	2dup			; 2DUP <IF SWAP DROP THEN
+	tag	p_less_if
+	fcb	$02
+	tag	swap
+	tag	drop
 
 x_min:
 	fcb	$00	; MIN
-	fcb	$5d,$4b,$4c,$02		; 2DUP > (IF) ofs=2
-	fcb	$22			;   SWAP
-	fcb	$0f			; DROP
+	tag	2dup			; 2DUP > IF SWAP DROP THEN
+	tag	greater_than
+	tag	p_if
+	fcb	$02
+	tag	swap
+	tag	drop
+
 	fcb	$00
 
 
@@ -3228,42 +3266,70 @@ ld3eb:	jmp	next
 
 
 x_m_div	equ	*-1	; M/
-	fcb	$0c			; (CALL)
+	tag	p_call			; (CALL)
 	fdb	Sd3da
-	fcb	$64,$23,$01,$28,$24	; ABS >R DABS R>
-	fcb	$01,$21			; UM/
-	fcb	$0c			; (CALL)
+	tag	abs			; ABS >R DABS R> UM/
+	tag	to_r
+	tag	dabs
+	tag	r_to
+	tag	um_div
+	tag	p_call			; (CALL)
 	fdb	Sd3e5
-	fcb	$22			; SWAP
-	fcb	$0c			; (CALL)
+	tag	swap			; SWAP
+	tag	p_call			; (CALL)
 	fdb	Sd3e5
-	fcb	$22			; SWAP
+	tag	swap			; SWAP
 
 x_s_to_d:
 	fcb	$00	; S>D
-	fcb	$1b,$29,$63
+	tag	dup			; DUP 0< NEGATE
+	tag	0_less_than
+	tag	negate
 
 x_div_mod:
 	fcb	$00	; /MOD
-	fcb	$23,$68,$24,$01,$29
+	tag	to_r			; >R S>D R> M/
+	tag	s_to_d
+	tag	r_to
+	tag	m_div
 
 x_times_div_mod:
 	fcb	$00	; */MOD
-	fcb	$23,$01,$23,$24,$01,$29
+	tag	to_r			; >R M* R> M/
+	tag	m_times
+	tag	r_to
+	tag	m_div
 
 x_m_div_mod:
 	fcb	$00	; M/MOD
-	fcb	$23,$33,$25,$01,$21,$24,$22,$23
-	fcb	$01,$21,$24
+	tag	to_r			; >R 0 R UM/ R> SWAP >R UM/ R>
+	tag	0
+	tag	r
+	tag	um_div
+	tag	r_to
+	tag	swap
+	tag	to_r
+	tag	um_div
+	tag	r_to
 
 x_div:
 	fcb	$00	; /
-	fcb	$69,$60		; /MOD SWAPDROP
+	tag	div_mod			; /MOD SWAPDROP
+	tag	swapdrop
 
 x_mod:
 	fcb	$00	; MOD
-	fcb	$5d,$69,$0f,$20,$29,$4c,$04,$3e
-	fcb	$52,$02,$60
+	tag	2dup			; 2DUP /MOD DROP ROT 0< IF - ELSE SWAPDROP THEN
+	tag	div_mod
+	tag	drop
+	tag	rot
+	tag	0_less_than
+	tag	p_if
+	fcb	$04
+	tag	minus
+	tag	p_else
+	fcb	$02
+	tag	swapdrop
 
 	fcb	$00
 
@@ -3288,11 +3354,14 @@ Ld441:	lda	z00,x
 
 Ld44e:	jmp	x_drop
 
+
 x_charbuf:
 	fcb	$00	; CHARBUF
-	fcb	$13,$36,$3d
+	literal	D0236
+	tag	plus
 
 	fcb	$00
+
 
 Sd456:	lda	d02b3,y
 	bcc	Ld45d
@@ -3367,10 +3436,30 @@ Ld4b6:	lda	z00,x
 
 x_flee:
 	fcb	$00	; FLEE
-	fcb	$1b,$13,$80,$16,$1b,$14,$ff,$39
-	fcb	$30,$62,$13,$1b,$3d,$15,$13,$7e
-	fcb	$16,$14,$3c,$17,$13,$7c,$18,$14
-	fcb	$3d,$17,$13,$7d,$18,$47,$01,$57
+	tag	dup		; DUP d0280 !
+	literal	d0280
+	tag	bang
+	tag	dup		; DUP $ff and 3 * d021b + @ d027e !
+	literal	$00ff
+	tag	and
+	tag	3
+	tag	times
+	literal	d021b
+	tag	plus
+	tag	at
+	literal	d027e
+	tag	bang
+	literal	z3c		; z3c @ d027c !
+	tag	c_at
+	literal	d027c
+	tag	c_bang
+	literal	z3d		; z3d @ d027z !
+	tag	c_at
+	literal	d027d
+	tag	c_bang
+	tag	execute		; EXECUTE HARD.CLR
+	tag	hard_clr
+
 
 Sd4e6:	jsr	Scbf9
 	lda	#$03
@@ -3447,13 +3536,30 @@ Ld567:	jmp	next
 
 
 x_setbanks	equ	*-1	; SETBANKS
-	fcb	$1b,$14,$ff,$39,$10,$0f,$3c,$14
-	fcb	$ff,$39,$a4,$0f
+	tag	dup		; DUP $ff AND SET.RAM DROP
+	literal	$00ff
+	tag	and
+	tag	set_ram
+	tag	drop
+	tag	flip		; FLIP $ff AND SET.ROM DROP
+	literal	$00ff
+	tag	and
+	tag	set_rom
+	tag	drop
+
 
 x_bigmove:
 	fcb	$00	; BIGMOVE
-	fcb	$14,$3b,$15,$23,$2f,$21,$01,$2f
-	fcb	$6f,$24,$01,$2f
+	literal	z3b		; $3b @ >R 4 ROLL SETBANKS MOVE
+	tag	at
+	tag	to_r
+	tag	4
+	tag	roll
+	tag	setbanks
+	tag	move
+	tag	r_to		; R> SETBANKS
+	tag	setbanks
+
 
 x_fill:
 	fcb	$00	; FILL
@@ -4383,12 +4489,12 @@ x_p_emit:
 	fcb	$01,$0b			; ABORT
 
 x_key:
-	fcb	$00	; KEY		; CLIT vkey @ EXECU
-	fcb	$14,vkey,$15,$47
+	fcb	$00	; KEY		; CLIT v_key @ EXECU
+	fcb	$14,v_key,$15,$47
 
 x_emit:
-	fcb	$00	; EMIT		; CLIT vemit @ EXECU
-	fcb	$14,vemit,$15,$47
+	fcb	$00	; EMIT		; CLIT v_emit @ EXECU
+	fcb	$14,v_emit,$15,$47
 
 x_beep:
 	fcb	$00	; BEEP
@@ -4939,100 +5045,154 @@ x_loc_prg:
 	fcb	$52,$02,$35,$11,$24,$20,$17,$39
 	fcb	$62,$4d,$25,$57,$22,$4c,$0a,$11
 	fcb	$44,$d6,$3d,$17,$32,$32,$52,$02
-	fcb	$38,$00,$00,$00,$00,$00,$00,$00
-	fcb	$de,$de,$00,$00,$00,$06,$00,$06
-	fcb	$00,$28,$fe,$28,$fe,$28,$48,$54
-	fcb	$fe,$54,$24,$46,$26,$10,$c8,$c4
-	fcb	$6c,$92,$ac,$40,$a0,$00,$00,$0e
-	fcb	$00,$00,$00,$38,$44,$82,$00,$00
-	fcb	$82,$44,$38,$00,$54,$38,$7c,$38
-	fcb	$54,$10,$10,$7c,$10,$10,$00,$80
-	fcb	$60,$00,$00,$10,$10,$10,$10,$10
-	fcb	$00,$c0,$c0,$00,$00,$40,$20,$10
-	fcb	$08,$04,$7c,$a2,$92,$8a,$7c,$00
-	fcb	$84,$fe,$80,$00,$c4,$a2,$92,$92
-	fcb	$8c,$44,$82,$92,$92,$6c,$30,$28
-	fcb	$24,$fe,$20,$4e,$8a,$8a,$8a,$72
-	fcb	$78,$94,$92,$92,$60,$02,$e2,$12
-	fcb	$0a,$06,$6c,$92,$92,$92,$6c,$0c
-	fcb	$92,$92,$52,$3c,$00,$6c,$6c,$00
-	fcb	$00,$00,$b6,$76,$00,$00,$00,$10
-	fcb	$28,$44,$82,$28,$28,$28,$28,$28
-	fcb	$82,$44,$28,$10,$00,$04,$02,$b2
-	fcb	$0a,$04,$64,$92,$f2,$42,$3c,$f8
-	fcb	$24,$22,$24,$f8,$82,$fe,$92,$92
-	fcb	$6c,$7c,$82,$82,$82,$44,$82,$fe
-	fcb	$82,$82,$7c,$fe,$92,$92,$92,$82
-	fcb	$fe,$12,$12,$12,$02,$7c,$82,$82
-	fcb	$a2,$e2,$fe,$10,$10,$10,$fe,$00
-	fcb	$82,$fe,$82,$00,$60,$80,$82,$7e
-	fcb	$02,$fe,$10,$28,$44,$82,$fe,$80
-	fcb	$80,$80,$80,$fe,$04,$18,$04,$fe
-	fcb	$fe,$08,$10,$20,$fe,$7c,$82,$82
-	fcb	$82,$7c,$fe,$12,$12,$12,$0c,$7c
-	fcb	$82,$a2,$42,$bc,$fe,$12,$32,$52
-	fcb	$8c,$4c,$92,$92,$92,$64,$02,$02
-	fcb	$fe,$02,$02,$7e,$80,$80,$80,$7e
-	fcb	$1e,$60,$80,$60,$1e,$7e,$80,$70
-	fcb	$80,$7e,$c6,$28,$10,$28,$c6,$0e
-	fcb	$10,$e0,$10,$0e,$c2,$a2,$92,$8a
-	fcb	$86,$fe,$fe,$82,$82,$82,$04,$08
-	fcb	$10,$20,$40,$82,$82,$82,$fe,$fe
-	fcb	$20,$10,$08,$10,$20,$80,$80,$80
-	fcb	$80,$80,$00,$01,$02,$04,$00,$70
-	fcb	$88,$88,$78,$80,$fe,$90,$88,$88
-	fcb	$70,$70,$88,$88,$88,$40,$70,$88
-	fcb	$88,$50,$fe,$70,$a8,$a8,$a8,$30
-	fcb	$10,$fc,$12,$04,$00,$98,$a4,$a4
-	fcb	$78,$04,$00,$fe,$08,$08,$f0,$00
-	fcb	$00,$fa,$00,$00,$40,$80,$88,$7a
-	fcb	$00,$00,$fe,$20,$50,$88,$00,$00
-	fcb	$fe,$00,$00,$f8,$08,$f0,$08,$f0
-	fcb	$f8,$10,$08,$08,$f0,$70,$88,$88
-	fcb	$88,$70,$84,$fc,$24,$24,$18,$18
-	fcb	$24,$24,$f8,$84,$00,$f8,$10,$08
-	fcb	$08,$90,$a8,$a8,$a8,$40,$08,$7c
-	fcb	$88,$40,$00,$78,$80,$80,$40,$f8
-	fcb	$18,$60,$80,$60,$18,$78,$80,$60
-	fcb	$88,$78,$88,$48,$f8,$90,$88,$00
-	fcb	$4c,$90,$90,$7c,$88,$c8,$a8,$98
-	fcb	$88,$00,$10,$6c,$82,$82,$00,$00
-	fcb	$ee,$00,$00,$82,$82,$6c,$10,$00
-	fcb	$02,$01,$02,$04,$02,$55,$aa,$55
-	fcb	$aa,$55,$08,$04,$fe,$04,$08,$10
-	fcb	$38,$54,$10,$10,$10,$10,$54,$38
-	fcb	$10,$20,$40,$fe,$40,$20,$dc,$4a
-	fcb	$8a,$5c,$c0,$de,$4a,$8a,$44,$c0
-	fcb	$0f,$02,$04,$02,$0f,$10,$10,$54
-	fcb	$10,$10,$44,$28,$10,$28,$44,$ff
-	fcb	$ff,$ff,$ff,$ff,$ff,$81,$81,$81
-	fcb	$ff,$70,$8a,$88,$7a,$80,$70,$8a
-	fcb	$88,$8a,$70,$78,$82,$80,$42,$f8	; "..px..B."
-	fcb	$f9,$12,$09,$0a,$f0,$00,$31,$32	; "......12"
-	fcb	$33,$34,$35,$36,$37,$38,$39,$30	; "34567890"
-	fcb	$14,$80,$0b,$2e,$8f,$6d,$71,$77	; ".....mqw"
-	fcb	$65,$72,$74,$79,$75,$69,$6f,$70	; "ertyuiop"
-	fcb	$81,$0e,$82,$16,$17,$6e,$61,$73	; ".....nas"
-	fcb	$64,$66,$67,$68,$6a,$6b,$6c,$15	; "dfghjkl."
-	fcb	$89,$83,$07,$84,$8a,$62,$8b,$8c	; ".....b.."
-	fcb	$2c,$3f,$20,$8d,$8e,$86,$7a,$78	; ",? ...zx"
-	fcb	$63,$76,$00,$85,$0d,$00,$21,$22	; "cv....!""
-	fcb	$23,$24,$25,$26,$27,$28,$29,$5f	; "#$%&'()_"
-	fcb	$14,$80,$0b,$2e,$8f,$4d,$51,$57	; ".....MQW"
-	fcb	$45,$52,$54,$59,$55,$49,$4f,$50	; "ERTYUIOP"
-	fcb	$81,$0e,$82,$16,$17,$4e,$41,$53	; ".....NAS"
-	fcb	$44,$46,$47,$48,$4a,$4b,$4c,$15	; "DFGHJKL."
-	fcb	$89,$83,$07,$84,$8a,$42,$8b,$8c
-	fcb	$2c,$3f,$20,$8d,$8e,$86,$5a,$58
-	fcb	$43,$56,$00,$85,$0d,$00,$21,$22
-	fcb	$23,$24,$25,$26,$27,$28,$29,$5f
-	fcb	$14,$80,$0b,$3a,$8f,$2a,$25,$20
-	fcb	$20,$20,$20,$2b,$2d,$20,$20,$3d
-	fcb	$81,$0e,$82,$16,$17,$7c,$20,$5c
-	fcb	$7b,$7d,$5b,$5d,$3c,$3e,$20,$15
-	fcb	$89,$83,$07,$84,$8a,$40,$8b,$8c
-	fcb	$3b,$2f,$20,$8d,$8e,$86,$20,$5e
-	fcb	$7e,$60,$00,$85,$0d
+	fcb	$38
+
+	fcb	$00
+
+
+chargen:
+	fcb	$00,$00,$00,$00,$00	; $20 space
+	fcb	$00,$de,$de,$00,$00	; $21 !
+	fcb	$00,$06,$00,$06,$00	; $22 "
+	fcb	$28,$fe,$28,$fe,$28	; $23 #
+	fcb	$48,$54,$fe,$54,$24	; $24 $
+	fcb	$46,$26,$10,$c8,$c4	; $25 %
+	fcb	$6c,$92,$ac,$40,$a0	; $26 &
+	fcb	$00,$00,$0e,$00,$00	; $27 '
+	fcb	$00,$38,$44,$82,$00	; $28 (
+	fcb	$00,$82,$44,$38,$00	; $29 )
+	fcb	$54,$38,$7c,$38,$54	; $2a *
+	fcb	$10,$10,$7c,$10,$10	; $2b +
+	fcb	$00,$80,$60,$00,$00	; $2c ,
+	fcb	$10,$10,$10,$10,$10	; $2d -
+	fcb	$00,$c0,$c0,$00,$00	; $2e .
+	fcb	$40,$20,$10,$08,$04	; $2f /
+	fcb	$7c,$a2,$92,$8a,$7c	; $30 0
+	fcb	$00,$84,$fe,$80,$00	; $31 1
+	fcb	$c4,$a2,$92,$92,$8c	; $32 2
+	fcb	$44,$82,$92,$92,$6c	; $33 3
+	fcb	$30,$28,$24,$fe,$20	; $34 4
+	fcb	$4e,$8a,$8a,$8a,$72	; $35 5
+	fcb	$78,$94,$92,$92,$60	; $36 6
+	fcb	$02,$e2,$12,$0a,$06	; $37 7
+	fcb	$6c,$92,$92,$92,$6c	; $38 8
+	fcb	$0c,$92,$92,$52,$3c	; $39 9
+	fcb	$00,$6c,$6c,$00,$00	; $3a :
+	fcb	$00,$b6,$76,$00,$00	; $3b ;
+	fcb	$00,$10,$28,$44,$82	; $3c <
+	fcb	$28,$28,$28,$28,$28	; $3d =
+	fcb	$82,$44,$28,$10,$00	; $3e > 
+	fcb	$04,$02,$b2,$0a,$04	; $3f ?
+	fcb	$64,$92,$f2,$42,$3c	; $40 @
+	fcb	$f8,$24,$22,$24,$f8	; $41 A
+	fcb	$82,$fe,$92,$92,$6c	; $42 B
+	fcb	$7c,$82,$82,$82,$44	; $43 C
+	fcb	$82,$fe,$82,$82,$7c	; $44 D
+	fcb	$fe,$92,$92,$92,$82	; $45 E
+	fcb	$fe,$12,$12,$12,$02	; $46 F
+	fcb	$7c,$82,$82,$a2,$e2	; $47 G
+	fcb	$fe,$10,$10,$10,$fe	; $48 H
+	fcb	$00,$82,$fe,$82,$00	; $49 I
+	fcb	$60,$80,$82,$7e,$02	; $4a J
+	fcb	$fe,$10,$28,$44,$82	; $4b K
+	fcb	$fe,$80,$80,$80,$80	; $4c L
+	fcb	$fe,$04,$18,$04,$fe	; $4d M
+	fcb	$fe,$08,$10,$20,$fe	; $4e N
+	fcb	$7c,$82,$82,$82,$7c	; $4f O
+	fcb	$fe,$12,$12,$12,$0c	; $50 P
+	fcb	$7c,$82,$a2,$42,$bc	; $51 Q
+	fcb	$fe,$12,$32,$52,$8c	; $52 R
+	fcb	$4c,$92,$92,$92,$64	; $53 S
+	fcb	$02,$02,$fe,$02,$02	; $54 T
+	fcb	$7e,$80,$80,$80,$7e	; $55 U
+	fcb	$1e,$60,$80,$60,$1e	; $56 V
+	fcb	$7e,$80,$70,$80,$7e	; $57 W
+	fcb	$c6,$28,$10,$28,$c6	; $58 X
+	fcb	$0e,$10,$e0,$10,$0e	; $59 Y
+	fcb	$c2,$a2,$92,$8a,$86	; $5a Z
+	fcb	$fe,$fe,$82,$82,$82	; $5b '['
+	fcb	$04,$08,$10,$20,$40	; $5c '\'
+	fcb	$82,$82,$82,$fe,$fe	; $5d ']'
+	fcb	$20,$10,$08,$10,$20	; $5e ^
+	fcb	$80,$80,$80,$80,$80	; $5f _
+	fcb	$00,$01,$02,$04,$00	; $60 `
+	fcb	$70,$88,$88,$78,$80	; $61 a
+	fcb	$fe,$90,$88,$88,$70	; $62 b
+	fcb	$70,$88,$88,$88,$40	; $63 c
+	fcb	$70,$88,$88,$50,$fe	; $64 d
+	fcb	$70,$a8,$a8,$a8,$30	; $65 e
+	fcb	$10,$fc,$12,$04,$00	; $66 f
+	fcb	$98,$a4,$a4,$78,$04	; $67 g
+	fcb	$00,$fe,$08,$08,$f0	; $68 h
+	fcb	$00,$00,$fa,$00,$00	; $69 i
+	fcb	$40,$80,$88,$7a,$00	; $6a j
+	fcb	$00,$fe,$20,$50,$88	; $6b k
+	fcb	$00,$00,$fe,$00,$00	; $6c l
+	fcb	$f8,$08,$f0,$08,$f0	; $6d m
+	fcb	$f8,$10,$08,$08,$f0	; $6e n
+	fcb	$70,$88,$88,$88,$70	; $6f o
+	fcb	$84,$fc,$24,$24,$18	; $70 p
+	fcb	$18,$24,$24,$f8,$84	; $71 q
+	fcb	$00,$f8,$10,$08,$08	; $72 r
+	fcb	$90,$a8,$a8,$a8,$40	; $73 s
+	fcb	$08,$7c,$88,$40,$00	; $74 t
+	fcb	$78,$80,$80,$40,$f8	; $75 u
+	fcb	$18,$60,$80,$60,$18	; $76 v
+	fcb	$78,$80,$60,$88,$78	; $77 w
+	fcb	$88,$48,$f8,$90,$88	; $78 x
+	fcb	$00,$4c,$90,$90,$7c	; $79 y
+	fcb	$88,$c8,$a8,$98,$88	; $7a z
+	fcb	$00,$10,$6c,$82,$82	; $7b {
+	fcb	$00,$00,$ee,$00,$00	; $7c |
+	fcb	$82,$82,$6c,$10,$00	; $7d }
+	fcb	$02,$01,$02,$04,$02	; $7e ~
+	fcb	$55,$aa,$55,$aa,$55	; $7f DEL
+	fcb	$08,$04,$fe,$04,$08	; $80 up arrow
+	fcb	$10,$38,$54,$10,$10	; $81 left arrow
+	fcb	$10,$10,$54,$38,$10	; $82 right arrow
+	fcb	$20,$40,$fe,$40,$20	; $83 down arrow
+	fcb	$dc,$4a,$8a,$5c,$c0	; $84 AM
+	fcb	$de,$4a,$8a,$44,$c0	; $85 PM
+	fcb	$0f,$02,$04,$02,$0f	; $86 superscript M
+	fcb	$10,$10,$54,$10,$10	; $87 division symbol
+	fcb	$44,$28,$10,$28,$44	; $88 multiplication symbol
+	fcb	$ff,$ff,$ff,$ff,$ff	; $89 solid box
+	fcb	$ff,$81,$81,$81,$ff	; $8a hollow box
+	fcb	$70,$8a,$88,$7a,$80	; $8b a with umlaut
+	fcb	$70,$8a,$88,$8a,$70	; $8c o with umlaut
+	fcb	$78,$82,$80,$42,$f8	; $8d u with umlaut
+	fcb	$f9,$12,$09,$0a,$f0	; $8e enye
+
+
+; unshifed keyboard mapping
+keymap:	fcb	$00,$31,$32,$33,$34,$35,$36,$37
+	fcb	$38,$39,$30,$14,$80,$0b,$2e,$8f
+	fcb	$6d,$71,$77,$65,$72,$74,$79,$75
+	fcb	$69,$6f,$70,$81,$0e,$82,$16,$17
+	fcb	$6e,$61,$73,$64,$66,$67,$68,$6a
+	fcb	$6b,$6c,$15,$89,$83,$07,$84,$8a
+	fcb	$62,$8b,$8c,$2c,$3f,$20,$8d,$8e
+	fcb	$86,$7a,$78,$63,$76,$00,$85,$0d
+
+; shifted keyboard mapping
+	fcb	$00,$21,$22,$23,$24,$25,$26,$27
+	fcb	$28,$29,$5f,$14,$80,$0b,$2e,$8f
+	fcb	$4d,$51,$57,$45,$52,$54,$59,$55
+	fcb	$49,$4f,$50,$81,$0e,$82,$16,$17
+	fcb	$4e,$41,$53,$44,$46,$47,$48,$4a
+	fcb	$4b,$4c,$15,$89,$83,$07,$84,$8a
+	fcb	$42,$8b,$8c,$2c,$3f,$20,$8d,$8e
+	fcb	$86,$5a,$58,$43,$56,$00,$85,$0d
+
+; second shift keyboard mapping
+	fcb	$00,$21,$22,$23,$24,$25,$26,$27
+	fcb	$28,$29,$5f,$14,$80,$0b,$3a,$8f
+	fcb	$2a,$25,$20,$20,$20,$20,$2b,$2d
+	fcb	$20,$20,$3d,$81,$0e,$82,$16,$17
+	fcb	$7c,$20,$5c,$7b,$7d,$5b,$5d,$3c
+	fcb	$3e,$20,$15,$89,$83,$07,$84,$8a
+	fcb	$40,$8b,$8c,$3b,$2f,$20,$8d,$8e
+	fcb	$86,$20,$5e,$7e,$60,$00,$85,$0d
 
 x_ram_n:
 	fcb	$00	; RAM.N
@@ -5116,13 +5276,27 @@ x_tag_179:
 	fcb	$7e,$33,$52,$03,$0e,$32,$4d,$43
 	fcb	$53,$46
 
-De8de:	fcb	$00
-	fcb	$83,$e6,$b8,$e3,$b8,$e3,$58
-	fcb	$e4,$4c,$2e,$cc,$6c,$00,$00,$6c
-	fcb	$00,$c0,$6c,$00,$c1,$7b,$ff,$00
-	fcb	$2e,$4c,$36,$cb,$4c,$00,$20,$4c
-	fcb	$00,$20,$65,$e6,$fa,$0a,$01,$51
-	fcb	$74,$09,$28,$df,$01,$c6
+De8de:	fcb	$00		; z00
+	fdb	keymap		; z01
+	fcb	$b8,$e3		; z03
+	fcb	$b8,$e3		; z05
+	fdb	chargen		; z07
+	jmp	next1		; next
+	jmp	(z00)		; z0c
+	jmp	(tag_table_0)		; ivec1
+	jmp	(tag_table_0+$100)	; ivect2
+	fcb	$7b,$ff		; z15
+	fcb	$00,$2e		; z17
+	jmp	Lcb36		; jirq
+	jmp	D2000		; z1c
+	jmp	D2000		; z1f
+	fcb	$65,$e6		; z22
+	fcb	$fa		; z24
+	fcb	$0a		; z25
+	fdb	$5101		; v_key
+	fdb	$0974		; v_emit
+	fdb	$df28		; v_abort
+	fdb	Sc601		; z2c
 
 x_query_key_hit:
 	fcb	$00	; ?KEY-HIT
