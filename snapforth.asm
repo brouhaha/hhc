@@ -1,4 +1,4 @@
-; SnapBASIC for HHC
+; SnapFORTH for HHC
 
 	cpu	6502
 
@@ -101,7 +101,7 @@ Z20	equ	$20
 Z42	equ	$42
 Z88	equ	$88
 D02f3	equ	$02f3
-D039f	equ	$039f
+tostate	equ	$039f
 D03a2	equ	$03a2
 D0306	equ	$0306
 D03a0	equ	$03a0
@@ -142,21 +142,24 @@ tag_table_8:
 		fdb	x_tag_805	; ((QUIT))
 		fdb	T03a6		; FIND
 		fdb	T040e		; EXPND
-		fdb	T047e		; TO
-		fdb	x_tag_809	; EXECT?
+		fdb	T047e		; TO		used to write SnapFORTH capsule variables
+		fdb	x_tag_809	; EXECTO
 		fdb	x_tag_80a	; UR@
+
+; SnapFORTH capsule dictionary variables
+; See SnapFORTH Referene Guide Volume II page G-4
 		fdb	x_tag_80b	; DP
 		fdb	x_tag_80c	; HDP
 		fdb	x_tag_80d	; HDP0
 		fdb	x_tag_80e	; CONTEXT
 		fdb	x_tag_80f	; CURRENT
 		fdb	x_tag_810	; TIB
-		fdb	x_tag_811	; TIBLE?
+		fdb	x_tag_811	; TIBLEN
 		fdb	x_tag_812	; IN
-		fdb	x_tag_813	; LASTI?
+		fdb	x_tag_813	; LASTIN
 		fdb	x_tag_814	; STATE
 		fdb	x_tag_815	; CSP
-		fdb	x_tag_816	; V-LIN?
+		fdb	x_tag_816	; V-LINK
 		fdb	x_tag_817	; L1
 		fdb	x_tag_818	; L2
 		fdb	x_tag_819	; L3
@@ -172,13 +175,14 @@ tag_table_8:
 		fdb	x_tag_823	; (LIT)
 		fdb	x_tag_824	; (QUIT)
 		fdb	x_tag_825	; FENCE
-		fdb	x_tag_826	; AREAP??
-		fdb	x_tag_827	; CON-L???
+		fdb	x_tag_826	; AREAPNT
+		fdb	x_tag_827	; CON-LINK
 		fdb	x_tag_828	; FWD
 		fdb	x_tag_829	; %HIGH
 		fdb	x_tag_82a
 		fdb	x_tag_82b
 		fdb	x_tag_82c
+
 		fdb	x_tag_82d	; 'V
 		fdb	x_tag_82e
 		fdb	x_tag_82f	; H>T
@@ -287,7 +291,7 @@ tag_table_8:
 		fdb	x_tag_896
 		fdb	x_tag_897	; EXPCT
 		fdb	x_tag_898	; QUERY
-		fdb	x_tag_899	; INTER????
+		fdb	x_tag_899	; INTERPRET
 		fdb	x_tag_89a
 		fdb	x_tag_89b
 		fdb	x_tag_89c
@@ -339,149 +343,185 @@ tag_table_8:
 	fcb	$ff,$68,$85,$42,$68,$a0,$01,$4c
 	fcb	$8d,$04
 
+; EXECTO
 x_tag_809:
 	LDA	#$01
 	JSR	Sffd3
 	JMP	L048f
 
+; UR@
 x_tag_80a:
 	fcb	$00
 	literal	D03a0		; D03a0
 	ntag	$15		; @
 	fcb	$00
 
+; DP (SnapFORTH capsule dictionary variable)
 x_tag_80b:
 	LDY	#$04
 	BNE	L42f1		; always taken
 
+; HDP (SnapFORTH capsule dictionary variable)
 x_tag_80c:
 	LDY	#$06
 	BNE	L42f1		; always taken
 
+; HDP0 (SnapFORTH capsule dictionary variable)
 x_tag_80d:
 	LDY	#$08
 	BNE	L42f1		; always taken
 
+; CONTEXT (SnapFORTH capsule dictionary variable)
 x_tag_80e:
 	LDY	#$0a
 	BNE	L42f1		; always taken
 
+; CURRENT (SnapFORTH capsule dictionary variable)
 x_tag_80f:
 	LDY	#$0c
 	BNE	L42f1		; always taken
 
+; TIB (SnapFORTH capsule dictionary variable)
 x_tag_810:
 	LDY	#$0e
 	BNE	L42f1		; always taken
 
+; TIBLEN (SnapFORTH capsule dictionary variable)
 x_tag_811:
 	LDY	#$10
 	BNE	L42f1		; always taken
 
+; IN (SnapFORTH capsule dictionary variable)
 x_tag_812:
 	LDY	#$12
 	BNE	L42f1		; always taken
 
+; LASTIN (SnapFORTH capsule dictionary variable)
 x_tag_813:
 	LDY	#$14
 	BNE	L42f1		; always taken
 
+; STATE (SnapFORTH capsule dictionary variable)
 x_tag_814:
 	LDY	#$16
 	BNE	L42f1		; always taken
 
+; CSP (SnapFORTH capsule dictionary variable)
 x_tag_815:
 	LDY	#$18
 	BNE	L42f1		; always taken
 
+; VLINK (SnapFORTH capsule dictionary variable)
 x_tag_816:
 	LDY	#$1a
 	BNE	L42f1		; always taken
 
+; L1 (SnapFORTH capsule dictionary variable)
 x_tag_817:
 	LDY	#$1c
 	BNE	L42f1		; always taken
 
+; L2 (SnapFORTH capsule dictionary variable)
 x_tag_818:
 	LDY	#$1e
 	BNE	L42f1		; always taken
 
+; L3 (SnapFORTH capsule dictionary variable)
 x_tag_819:
 	LDY	#$20
 	BNE	L42f1		; always taken
 
+; L4 (SnapFORTH capsule dictionary variable)
 x_tag_81a:
 	LDY	#$22
 	BNE	L42f1		; always taken
 
+; O (SnapFORTH capsule dictionary variable)
 x_tag_81b:
 	LDY	#$24
 L42f1:	JMP	L0485
 
+; MAXSZ (SnapFORTH capsule dictionary variable)
 x_tag_81c:
 	LDY	#$26
 	BNE	L42f1		; always taken
 
+; WIDTH (SnapFORTH capsule dictionary variable)
 x_tag_81d:
 	LDY	#$28
 	BNE	L42f1		; always taken
 
+; unknown (SnapFORTH capsule dictionary variable)
 x_tag_81e:
 	LDY	#$2a
 	BNE	L42f1		; always taken
 
+; unknown (SnapFORTH capsule dictionary variable)
 x_tag_81f:
 	LDY	#$2c
 	BNE	L42f1		; always taken
 
+; unknown (SnapFORTH capsule dictionary variable)
 x_tag_820:
 	LDY	#$2e
 	BNE	L42f1		; always taken
 
+; unknown (SnapFORTH capsule dictionary variable)
 x_tag_821:
 	LDY	#$30
 	BNE	L42f1		; always taken
 
+; (NUM) (SnapFORTH capsule dictionary variable)
 x_tag_822:
 	LDY	#$32
 	BNE	L42f1		; always taken
 
+; (LIT) (SnapFORTH capsule dictionary variable)
 x_tag_823:
 	LDY	#$34
 	BNE	L42f1		; always taken
 
+; (QUIT) (SnapFORTH capsule dictionary variable)
 x_tag_824:
 	LDY	#$36
 	BNE	L42f1		; always taken
 
+; (FENCE) (SnapFORTH capsule dictionary variable)
 x_tag_825:
 	LDY	#$38
 	BNE	L42f1		; always taken
 
+; (AREAPNT) (SnapFORTH capsule dictionary variable)
 x_tag_826:
 	LDY	#$3a
 	BNE	L42f1		; always taken
 
+; (CON-LINK) (SnapFORTH capsule dictionary variable)
 x_tag_827:
 	LDY	#$3c
 	BNE	L42f1		; always taken
 
+; (FWD) (SnapFORTH capsule dictionary variable)
 x_tag_828:
 	LDY	#$3e
 	BNE	L42f1		; always taken
 
+; (%HIGH) (SnapFORTH capsule dictionary variable)
 x_tag_829:
 	LDY	#$40
 	BNE	L42f1		; always taken
 
+; unknown (SnapFORTH capsule dictionary variable)
 x_tag_82a:
 	LDY	#$42
 	BNE	L42f1		; always taken
 
+; unknown (SnapFORTH capsule dictionary variable)
 x_tag_82b:
 	LDY	#$44
 	BNE	L42f1		; always taken
 
+; unknown (SnapFORTH capsule dictionary variable)
 x_tag_82c:
 	LDY	#$46
 	BNE	L42f1		; always taken
@@ -504,18 +544,24 @@ x_tag_82c:
 	fcb	$00,$00,$00,$d0,$00,$c0,$00,$00
 	fcb	$07,$07,$00,$00,$00,$40,$00,$01
 	fcb	$00,$9b,$00
+
 	fcb	$c5
 	mstr	"FORTH"
+
 	fcb	$02,$8e,$00,$20,$12,$57,$83	; ".... .W."
 	fcb	$00,$81,$a0,$00,$00,$81,$a0,$00	; "........"
 	fcb	$00,$b6,$00
+
 	fcb	$c9
-	mstr	"ASSEMBLE"
+	mstr	"ASSEMBLE"	; and "R" , but only first eight matched
+
 	fcb	$02,$a9,$00,$20
 	fcb	$12,$57,$e2,$7f,$81,$a0,$91,$00	; ".W......"
 	fcb	$81,$a0,$91,$00,$d8,$66
+
 	fcb	$c7
 	mstr	"FORWARD"
+
 	fcb	$02,$c3
 	fcb	$00,$20,$12,$57,$00,$00,$81,$a0	; ". .W...."
 	fcb	$00,$00,$81,$a0,$ac,$00,$00,$04	; "........"
@@ -539,10 +585,12 @@ L4471:	fcb	$00
 	cstr	"JWA V.D. Vuurst"
 
 ; SET
+; Set a compiler option
 L4483:	fcb	$00
 	fcb	$08,$0a,$41,$08,$2d,$45
 
 ; CLR
+; Clear a compiler option
 L448a:	fcb	$00
 	fcb	$08,$0a,$41,$08,$2d,$46
 
@@ -551,36 +599,44 @@ x_tag_82e:
 	fcb	$24,$79,$22,$23,$08,$0a,$41,$17	; "$y"#..A."
 	fcb	$39                     	; "9"
 
+; H>T
 x_tag_82f:
 	fcb	$00
 	fcb	$08,$1b,$3d               	; "..="
 
+; T>H
 x_tag_830:
 	fcb	$00
 	fcb	$08,$1b,$3e,$00            	; "..>."
 
+; %VAR
+; Returns state of "TO" variables, 0 = FROM, 1 = TO, -1 = +TO
 x_tag_831:
-	LDA	D039f
+	LDA	tostate
 	PHA
 	BPL	L44ab
 	DEY
 L44ab:	TYA
 	JMP	(Xffc8)
 
+; ((
 x_tag_832:
 	PHA
-	LDA	D039f
+	LDA	tostate
 	PHA
 	fcb	$24	; bit zero-page opcode to skip one byte
+
+; +TO
 x_tag_833:
 	DEY
 x_tag_834:
-	STY	D039f
+	STY	tostate
 	JMP	L09
 
+; ))
 x_tag_835:
 	PLA
-	STA	D039f
+	STA	tostate
 	PLA
 	JMP	L09
 
@@ -604,16 +660,19 @@ x_tag_836:
 	JMP	(Xffb8)
 L44e8:	JMP	(Xffba)
 
+; U>
 x_tag_837:
 	fcb	$00
 	ntag	$22			; SWAP
 	ntag	$117			; U<
 
+; 0>
 x_tag_838:
 	fcb	$00
 	ntag	$33			; 0
 	ntag	$4b			; >
 
+; UMIN
 x_tag_839:
 	fcb	$00
 	ntag	$5d			; 2DUP
@@ -622,6 +681,7 @@ x_tag_839:
 	ntag	$22			; SWAP
 R44F9:	ntag	$0f			; DROP
 
+; UMAX
 x_tag_83a:
 	fcb	$00
 	ntag	$5d			; 2DUP
@@ -630,12 +690,14 @@ x_tag_83a:
 	ntag	$22			; SWAP
 R4501:	ntag	$0f			; DROP
 
+; D.
 x_tag_83b:
 	fcb	$00
 	ntag	$33			; '0'
 	ntag	$16a			; D.R
 	ntag	$7d			; SPACE
 
+; U.
 x_tag_83c:
 	fcb	$00
 	fcb	$33			; '0'
@@ -652,12 +714,14 @@ T450b:
 	ntag	$5b			; B>A
 	ntag	$76			; ENIT
 
+; B.
 x_tag_83d:
 	fcb	$00
 	ntag	$0c			; (CALL)
 	fdb	T450b			; T450b
 	ntag	$7d			; SPACE
 
+; H.
 x_tag_83e:
 	fcb	$00
 	ntag	$1b			; DUP
@@ -666,6 +730,7 @@ x_tag_83e:
 	fdb	T450b			; T450b
 	ntag	$83d			; ?
 
+; G.
 x_tag_840:
 	fcb	$00
 	fcb	$14,$0c,$11,$00,$fb,$01,$ad,$1c	; "........"
@@ -676,23 +741,28 @@ x_tag_840:
 	fcb	$01,$14,$08,$3f,$33,$01,$6b,$01	; "...?3.k."
 	fcb	$16,$24,$0e               	; ".$."
 
+; SEMIT
 x_tag_841:
 	fcb	$00
 	fcb	$14,$7f,$39,$1b,$35,$51,$04,$0f	; "..9.5Q.."
 	fcb	$14,$2e,$76               	; "..v"
 
+; STYPE
 x_tag_842:
 	fcb	$00
 	fcb	$a9,$59,$06,$3b,$17,$08,$41,$57	; ".Y.;..AW"
 
+; SP!
 x_tag_843:
 	fcb	$00
 	fcb	$14,$ff,$01,$0c            	; "...."
 
+; ?S
 x_tag_844:
 	fcb	$00
 	fcb	$1f,$14,$ff,$22,$3e,$01,$12   	; "...">.."
 
+; .S
 x_tag_845:
 	fcb	$00
 	fcb	$7d,$08,$44,$1a,$4c,$0b,$33,$22	; "}.D.L.3""
@@ -700,14 +770,17 @@ x_tag_845:
 	fcb	$7a
 	cstr	"EMPTY"
 
+; ?
 x_tag_846:
 	fcb	$00
 	fcb	$15,$01,$6c               	; "..l"
 
+; C?
 x_tag_847:
 	fcb	$00
 	fcb	$17,$01,$6c               	; "..l"
 
+; DUMP
 x_tag_848:
 	fcb	$00
 	fcb	$33,$23,$7e,$1b,$5d,$08,$3e,$7d	; "3#~.].>}"
@@ -721,10 +794,12 @@ x_tag_848:
 	fcb	$0b,$14,$82,$58,$04,$42,$52,$04	; "...X.BR."
 	fcb	$0f,$2f,$3d,$53,$49         	; "./=SI"
 
+; HERE
 x_tag_849:
 	fcb	$00
 	fcb	$08,$34,$08,$0b            	; ".4.."
 
+; -WORD
 x_tag_84b:
 	fcb	$00
 	fcb	$12,$9e,$17,$08,$04,$7e,$7a
@@ -747,32 +822,39 @@ x_tag_84c:
 	fcb	$08,$4b
 	cstr	"SYSTEM ERROR"
 
+; ?PAIR?
 x_tag_84d:
 	fcb	$00
 	fcb	$48,$08,$4c
 	cstr	"ILLEGAL CONSTRUCTION"
 
+; !CSP
 x_tag_84e:
 	fcb	$00
 	fcb	$1f,$08,$08,$08,$15         	; "....."
 
+; ?CSP
 x_tag_84f:
 	fcb	$00
 	fcb	$1f,$08,$15,$08,$4d         	; "....M"
 
+; ?COMP
 x_tag_850:
 	fcb	$00
 	fcb	$08,$14,$08,$4c
 	cstr	"CAN'T EXECUTE"
 
+; ?EXEC
 x_tag_851:
 	fcb	$00
 	fcb	$08,$14,$28,$08,$4c
 	cstr	"CAN'T COMPILE"
 
+; null character
 L46a4:	fcb	$00
 	fcb	$27,$0e
 
+; ALLOT
 x_tag_852:
 	fcb	$00
 	fcb	$08,$0b,$3d,$08,$0c,$1c,$37,$3d	; "..=...7="
@@ -784,6 +866,7 @@ x_tag_853:
 	fcb	$08,$28,$28,$08,$4c
 	cstr	"FORWARD NOT ALLOWED"
 
+; ,F
 x_tag_854:
 	fcb	$00
 	fcb	$08,$53,$08,$49,$01,$aa,$2b,$08	; ".S.I..+."
@@ -804,10 +887,12 @@ x_tag_857:
 	fcb	$49,$1c,$16,$41,$16,$11,$e0,$4e	; "I..A...N"
 	fcb	$33,$08,$08,$08,$28,$00,$0f   	; "3...(.."
 
+; ,
 x_tag_858:
 	fcb	$00
 	fcb	$33,$08,$57,$08,$55         	; "3.W.U"
 
+; C,
 x_tag_859:
 	fcb	$00
 	fcb	$31,$08,$57,$08,$56,$00,$a6,$62	; "1.W.V..b"
@@ -952,6 +1037,7 @@ x_tag_85c:
 	fcb	$11,$fe,$58,$18,$14,$65,$14,$40	; "..X..e.@"
 	fcb	$45,$08,$17,$47            	; "E..G"
 
+; INCH
 x_tag_85d:
 	fcb	$00
 	fcb	$08,$10,$08,$12,$3d,$17,$1b,$4e	; "....=..N"
@@ -959,6 +1045,7 @@ x_tag_85d:
 	fcb	$4c,$07,$08,$08,$08,$12,$14,$0d	; "L......."
 	fcb	$00,$32,$08,$33,$08,$12      	; ".2.3.."
 
+; WORD
 x_tag_85e:
 	fcb	$00
 	fcb	$08,$12,$08,$08,$08,$13,$08,$10	; "........"
@@ -972,6 +1059,7 @@ x_tag_84a:
 	fcb	$00
 	fcb	$35,$08,$5e               	; "5.^"
 
+; -FIND
 x_tag_85f:
 	fcb	$00
 	fcb	$08,$4a,$08,$49,$08,$0e,$08,$06	; ".J.I...."
@@ -991,6 +1079,7 @@ x_tag_862:
 	fcb	$00
 	fcb	$08,$5f,$08,$61            	; "._.a"
 
+; ?DEF
 x_tag_864:
 	fcb	$00
 	fcb	$08,$5f,$1b,$4c,$03,$0e,$32   	; "._.L..2"
@@ -1001,6 +1090,7 @@ x_tag_865:
 	fcb	$2e,$02,$08,$4c
 	cstr	"INTERNAL"
 
+; TAG
 x_tag_866:
 	fcb	$00
 	fcb	$08,$65,$4c,$0d,$1f,$17,$2d,$4b	; ".eL...-K"
@@ -1018,7 +1108,9 @@ x_tag_868:
 	fcb	$40,$15,$08,$65,$22,$08,$66,$3d	; "@..e".f="
 	fcb	$23
 
-; SET.C???????
+; value SET.CONSTANT name
+; Tell compiler to compile all references to the constant value to the
+; specified name.
 L4bae:
 	fcb	$00,$08,$53,$08,$63,$08,$0c	; "#..S.c.."
 	fcb	$3f,$22,$1c,$16,$3f,$22,$1c,$16	; "?"..?".."
@@ -1056,6 +1148,7 @@ L4c2b:
 	fcb	$08,$62,$08	; "...T..b."
 	fcb	$69                     	; "i"
 
+; 'X
 x_tag_863:
 	fcb	$00
 	fcb	$08,$62,$79,$28,$08,$61,$15,$08	; ".by(.a.."
@@ -1074,6 +1167,7 @@ L4c4d:
 	fcb	$08,$6b,$08	; "M..g..k."
 	fcb	$6a,$01,$19,$e9,$ff         	; "j...."
 
+; NFA
 x_tag_86c:
 	LDA	#$01	; 1 .
 	JSR	Sffd3
@@ -1090,6 +1184,7 @@ L4c66:	ADC	Z42
 	ADC	#$00	; 0 .
 	JMP	(Xffc8)
 
+; PFA
 x_tag_86a:
 	LDA	#$01	; 1 .
 	JSR	Sffd3
@@ -1102,27 +1197,33 @@ L4c77:	INY
 	ADC	#$01	; 1 .
 	BNE	L4c66
 
+; LFA
 x_tag_86d:
 	fcb	$00
 	fcb	$08,$6c,$3f               	; ".l?"
 
+; LATEST
 x_tag_86e:
 	fcb	$00
 	fcb	$08,$0f,$15               	; "..."
 
+; LAST
 x_tag_86b:
 	fcb	$00
 	fcb	$08,$1e,$1a,$4c,$05,$08,$0d,$3d	; "...L...="
 	fcb	$00,$08,$6e               	; "..n"
 
+; HEX
 x_tag_86f:
 	fcb	$00
 	fcb	$14,$10,$14,$25,$18         	; "...%."
 
+; DECIMAL
 x_tag_83f:
 	fcb	$00
 	fcb	$14,$0a,$14,$25,$18         	; "...%."
 
+; OCTAL
 x_tag_870:
 	fcb	$00
 	fcb	$2b,$14,$25,$18            	; "+.%."
@@ -1147,6 +1248,7 @@ x_tag_872:
 	fcb	$23,$2f,$6c,$22,$3c,$3d,$3c,$24	; "#/l"<=<$"
 	fcb	$24                     	; "$"
 
+; (NUMBER)
 x_tag_802:
 	fcb	$00
 	fcb	$14,$25,$17,$14,$0a,$48,$4c,$10	; ".%...HL."
@@ -1156,18 +1258,22 @@ x_tag_802:
 	fcb	$00,$79,$1c,$3d,$23,$33,$25,$18	; ".y.=#3%."
 	fcb	$08,$22,$47,$24,$48         	; "."G$H"
 
+; NUMBER
 x_tag_873:
 	fcb	$00
 	fcb	$0c,$4a,$4d,$08,$61         	; ".JM.a"
 
+; CONVERT
 x_tag_871:
 	fcb	$00
 	fcb	$08,$72,$0f,$40,$60         	; ".r.@`"
 
+; DCONVERT
 x_tag_874:
 	fcb	$00
 	fcb	$08,$72,$4e,$02,$40         	; ".rN.@"
 
+; FCONVERT
 x_tag_875:
 	fcb	$00
 	fcb	$0c,$f2,$4c,$0f,$00,$08,$13,$08	; "..L....."
@@ -1184,6 +1290,7 @@ L4d81:
 	fcb	$00	; "...nM.i."
 	fcb	$0c,$6e,$4d,$14,$1f,$39,$08,$69	; ".nM..9.i"
 
+; S"
 x_tag_876:
 	fcb	$00
 	fcb	$14,$22,$08,$5e,$08,$49,$17,$42	; ".".^.I.B"
@@ -1206,6 +1313,7 @@ x_tag_877:
 	fcb	$3e,$13,$1b,$15,$24,$17,$23,$22	; ">...$.#""
 	fcb	$43,$3d,$60,$24            	; "C=`$"
 
+; CFA
 x_tag_878:
 	fcb	$00
 	fcb	$79,$4e,$09,$08,$77,$4c,$05,$15	; "yN..wL.."
@@ -1220,29 +1328,35 @@ x_tag_879:	fcb	$00
 S4e0c:	JSR	Sffd6
 	fcb	$17,$08,$0a,$15,$3d,$08,$09,$00	; "....=..."
 
+; TT.OR????
 x_tag_87a:
 	JSR	S4e0c
 	fcb	$00
 
+; STAG#
 x_tag_87b:
 	JSR	S4e0c
 	fcb	$02                     	; "."
 
+; LTAG#
 x_tag_87c:
 	JSR	S4e0c
 	fcb	$04                     	; "."
 
+; EXT#
 x_tag_87d:
 	JSR	S4e0c
 	fcb	$06
 
+; #SHORTS
 x_tag_87e:
 	jsr	S4e0c
 	fcb	$08
 
+; #LONGS
 x_tag_87f:
 	JSR	S4e0c
-	ASL
+	fcb	$0a
 
 x_tag_880:
 	JSR	S4e0c
@@ -1288,10 +1402,12 @@ L4eca:
 	fcb	$08,$56,$00,$08,$4b
 	cstr	"UNDEFINED"
 
+; ]
 x_tag_883:
 	fcb	$00
 	fcb	$14,$c0,$08,$08,$08,$14      	; "......"
 
+; [
 x_tag_884:
 	fcb	$00
 	fcb	$33,$08,$08,$08,$14
@@ -1321,6 +1437,7 @@ L4efa:
 	fcb	$08,$84,$0c,$79,$4e,$08,$79,$20	; "...yN.y "
 	fcb	$d6,$ff,$08,$0a,$16         	; "....."
 
+; (CREATE)
 x_tag_885:
 	fcb	$00
 	fcb	$08,$0c,$3f,$20,$1c,$16,$40,$22	; "..? ..@""
@@ -1417,6 +1534,7 @@ x_tag_88b:
 	fcb	$08,$08,$21,$37,$39,$32,$3a,$22	; "..!792:""
 	fcb	$18                     	; "."
 
+; SMUDGE
 x_tag_88c:
 	fcb	$00
 	fcb	$08,$21,$1a,$4c,$0b,$08,$6b,$30	; ".!.L..k0"
@@ -1428,6 +1546,8 @@ x_tag_88d:
 	fcb	$08,$0d,$3e,$08,$08,$08,$20,$08	; "..>... ."
 	fcb	$4e                     	; "N"
 
+; value == name
+; Define name to push the constant value using normal literals.
 x_tag_88e:
 	fcb	$00
 	fcb	$08,$53,$08,$1e,$22,$32,$08,$89	; ".S.."2.."
@@ -1439,20 +1559,24 @@ L51a1:
 	fcb	$08,$49,$08	; "......I."
 	fcb	$2f,$08,$8e,$0c,$12,$4a      	; "/....J"
 
+; CODE
 x_tag_88f:
 	fcb	$00
 	fcb	$08,$8d,$0c,$12,$4a,$08,$87,$08	; "....J..."
 	fcb	$8b                     	; "."
 
+; CODEC
 x_tag_890:
 	fcb	$00
 	fcb	$08,$8d,$0c,$12,$4a,$08,$8a,$08	; "....J..."
 	fcb	$8b
 
+; ENDCODE
 L51bf:	fcb	$00
 	fcb	$08,$4f,$08,$8c,$08,$0f	; "...O...."
 	fcb	$08,$08,$08,$0e            	; "...."
 
+; 'V
 x_tag_82d:
 	fcb	$00
 	fcb	$08,$62,$08,$78,$08,$69      	; ".b.x.i"
@@ -1524,10 +1648,12 @@ x_tag_892:
 	fcb	$00
 	fcb	$08,$87,$35,$08,$56,$08,$55   	; "..5.V.U"
 
+; CREATE <BUILDS
 x_tag_882:
 	fcb	$00
 	fcb	$11,$20,$4a,$08,$92         	; ". J.."
 
+; CREATE? <BUILDS?
 x_tag_893:
 	fcb	$00
 	fcb	$08,$8a,$35,$08,$56,$11,$20,$4a	; "..5.V. J"
@@ -1539,7 +1665,8 @@ L52e3:
 	fcb	$08,$6b,$41,$14,$40	; ".U..kA.@"
 	fcb	$45
 
-; CONSTANT
+; value CONSTANT name
+; Defines a tag that pushes a constant onto the stack.
 L52ea:
 	fcb	$00
 	fcb	$11,$e8,$ff,$08,$92,$08	; "E......."
@@ -1551,7 +1678,12 @@ L52f2:
 	fcb	$0c,$6b,$4b,$11,$99,$42	; "U..kK..B"
 	fcb	$08,$92,$34,$08,$55
 
-; AREA
+; AREA aaa
+; Allocate a Temporary Storage Area (TSA) named "aaa".
+; Use before defining variables, and follow by ENDAREA.
+; The defined area name will allocate the TSA, returning a boolean for
+; success.
+; Note: the maximum size of a TSA is 250 bytes.
 L52fe:
 	fcb	$00
 	fcb	$11,$dc	; "..4.U..."
@@ -1559,6 +1691,7 @@ L52fe:
 	fcb	$26,$32,$08,$56
 
 ; ENDAREA
+; Stop defining variables in a TSA.
 L530d:
 	fcb	$00		; effectively a NOP?
 
@@ -1571,45 +1704,52 @@ x_tag_894:
 	fcb	$47,$45,$1b,$08,$26,$18,$40,$08	; "GE..&.@."
 	fcb	$56
 
-; STRING
+; n STRING ccc
+; Allocate a string variable with room for n characters, named "ccc", in a TSA.
 L5330:
 	fcb	$00
 	fcb	$42,$11,$df,$ff,$08,$94	; "V.B....."
 
-; VAR
+; VAR ccc
+; Allocate a one-word variable named "ccc" in a TSA.
 L5337:
 	fcb	$00
 	fcb	$32,$0c,$30,$53
 
-; CVAR
+; CVAR ccc
+; Allocate a one byte variable named "ccc" in a TSA.
 L533c:
 	fcb	$00
 	fcb	$33,$0c	; ".2.0S.3."
 	fcb	$30,$53
 
-; DVAR
+; DVAR ccc
+; Allocate a two-word variable (4 bytes) named "ccc" in a TSA.
 L5341:
 	fcb	$00
 	fcb	$30,$0c,$30,$53
 
-; FVAR
+; FVAR ccc
+; Allocate a floating point variable (8 bytes) named "ccc" in a TSA.
 L5346:
 	fcb	$00
 	fcb	$2c,$0c,$30,$53
 
-; CVECTOR
+; n CVECTOR ccc
+; Allocate a vector of n bytes named "ccc" in a TSA.
 L534b:
 	fcb	$00
 	fcb	$11,$e2,$ff	; ",.0S...."
 	fcb	$08,$94
 
-; VECTOR
+; n VECTOR ccc
+; Allocated a vector of n words named "ccc" in a TSA.
 L5351:
 	fcb	$00
 	fcb	$43,$11,$e5,$ff,$08	; "...C...."
 	fcb	$94
 
-; JUMP-???
+; JUMP-TAB
 L5358:
 	fcb	$00
 	fcb	$08,$82,$0c,$e3,$52,$33	; "......R3"
@@ -1650,17 +1790,20 @@ x_tag_896:
 	fcb	$00
 	fcb	$0f,$14,$28,$16            	; "..(."
 
+; EXPCT
 x_tag_897:
 	fcb	$00
 	fcb	$14,$28,$15,$11,$08,$96,$14,$28	; ".(.....("
 	fcb	$16,$20,$20,$40,$33,$33,$11,$08	; ".  @33.."
 	fcb	$95,$33,$bc,$0e,$0e,$33,$8d,$18	; ".3...3.."
 
+; QUERY
 x_tag_898:
 	fcb	$00
 	fcb	$08,$10,$08,$11,$08,$97,$33,$08	; "......3."
 	fcb	$08,$08,$12               	; "..."
 
+; (LITERAL)
 x_tag_803:
 	fcb	$00
 	fcb	$33,$58,$04,$08,$69,$00,$32,$58	; "3X..i.2X"
@@ -1676,6 +1819,7 @@ L540b:	lda	Z00,x
 	inx
 	jmp	(Z42)
 
+; INTERPRET
 x_tag_899	equ	*-1
 	fcb	$08,$32,$08,$5f,$4c,$47,$1b,$42	; ".2._LG.B"
 	fcb	$15,$1c,$08,$6c,$17,$08,$14,$4b	; "...l...K"
@@ -1702,12 +1846,14 @@ L547c:
 	fcb	$08,$08,$08,$0b,$08,$20,$08,$0d	; "..... .."
 	fcb	$3d,$0c,$49,$57            	; "=.IW"
 
+; ((QUIT))
 x_tag_805:
 	fcb	$00
 	fcb	$0c,$7c,$54,$7d,$08,$34,$08,$14	; ".|T}.4.."
 	fcb	$4e,$05,$7a,$02,$6f,$6b,$7e,$08	; "N.z.ok~."
 	fcb	$98,$08,$99,$53,$10         	; "...S."
 
+; QUIT
 x_tag_801:
 	fcb	$00
 	fcb	$12,$9e,$17,$08,$04,$12,$9c,$15	; "........"
@@ -1805,6 +1951,7 @@ R5643:	literal	$a081
 	fcb	$08,$11,$08,$10,$08,$11,$01,$32	; ".......2"
 	fcb	$11,$08,$01,$13,$80,$16,$08,$01	; "........"
 
+; SnapFORTH capsule entry point
 x_tag_800:
 	fcb	$00
 	ntag	$32		; 1
@@ -2010,6 +2157,7 @@ x_tag_89f:
 	fcb	$13,$f2,$18,$31,$af,$5d,$01,$8b	; "...1.].."
 	fcb	$1b,$4c,$05,$81,$41,$17,$22   	; ".L..A.""
 
+; (LOAD)
 x_tag_8a0:
 	fcb	$00
 	fcb	$08,$17,$08,$18,$26,$08,$19,$08	; "....&..."
@@ -2047,7 +2195,7 @@ L5b28:
 	fcb	$0c,$13,$5b	; ""..2...["
 	fcb	$01,$19,$99,$ff
 
-; DEVLO??
+; DEVLOAD
 L5b30:
 	fcb	$00
 	fcb	$33,$22,$31	; ".....3"1"
@@ -2055,7 +2203,7 @@ L5b30:
 	fcb	$01,$4f,$0e,$11,$08,$5c,$31,$33	; ".O...\13"
 	fcb	$33,$08,$a0
 
-; DEVLO???
+; DEVLOAD"
 L5b47:
 	fcb	$00
 	fcb	$0c,$13,$5b,$01	; "3.....[."
@@ -2084,12 +2232,13 @@ L5b6e:
 	fcb	$41,$18,$12,$9e,$17,$08,$04,$33	; "A......3"
 	fcb	$08,$08,$08,$12,$33,$08,$10,$16	; "....3..."
 
-; GET-T???
+; GET-TYPE
 L5bbc:
 	fcb	$00
 	fcb	$08,$14,$4c,$07,$11,$81,$41	; "...L...A"
 	fcb	$08,$55,$00,$81,$41         	; ".U..A"
 
+; ENDIF THEN
 x_tag_8a1:
 	fcb	$00
 	fcb	$08,$50,$23,$08,$49,$1c,$3e,$25	; ".P#.I.>%"
@@ -2222,7 +2371,7 @@ L5cf9:
 	fcb	$00
 	fcb	$08,$a3,$4c
 
-; CASEW????
+; CASEWHILE
 L5cfd:
 	fcb	$00
 	fcb	$0c,$e9,$5c	; "...L...\"
@@ -2244,7 +2393,7 @@ L5d0f:
 	fcb	$0c	; "...\/=.."
 	fcb	$f5,$5c,$2f,$3d
 
-; WHILE????
+; WHILE.ITS
 L5d15:
 	fcb	$00
 	fcb	$0c,$51,$5c	; ".\/=..Q\"
@@ -2291,7 +2440,7 @@ L5d48:	fcb	$00	; "..h.K.v."
 D5d5f:	word5	D5d74,"FALSE",$01,$0000
 D5d6a:	word5	0,"%OVR",$01,$0000
 D5d74:	word5	D5f13,"TRUE",$01,$0001
-	word5	D5d6a,"%INVISIBLE",$01,$0001
+	word5	D5d6a,"%INVISIBLE",$01,$0001	; file type
 	word5	,"WHICH?",$01,$0001
 	word5	,"TIMEFLAG",$01,$0001
 	word5	,"BATBLIP",$01,$0001
@@ -2307,7 +2456,7 @@ D5d74:	word5	D5f13,"TRUE",$01,$0001
 	word	,"CHVECT1",$01,$0003
 	word	,"CHVECT2",$01,$0005
 	word5	,"%LI",$01,$0003
-	word5	,"%EXECUTE",$01,$0004
+	word5	,"%EXECUTE",$01,$0004		; file type
 	word5	,"%DELETE",$01,$0004
 	word5	,"RAMEXFLAG",$01,$0004
 	word5	,"SHIFT?",$01,$0004
@@ -2325,7 +2474,7 @@ D5d74:	word5	D5f13,"TRUE",$01,$0001
 	word5	,"2SHFTBLIP",$01,$0008
 	word5	,"DISPON",$01,$0008
 	word5	,"&BSP",$01,$0008
-	word5	,"%TEXT",$01,$0008
+	word5	,"%TEXT",$01,$0008		; file type
 	word5	,"RUNBIT",$01,$0008
 D5f08:	word5	,"LOCK.IT",$01,$0008
 D5f13:	word5	$5fb0,"NEXT",$01,$0009
@@ -2339,7 +2488,7 @@ D5f13:	word5	$5fb0,"NEXT",$01,$0009
 	word5	,"FUNBIT",$01,$0010
 	word5	,"STKBIT",$01,$0010
 	word5	,"DVCON",$01,$0010
-	word5	,"RECBL??",$01,$0010
+	word5	,"RECBLIP",$01,$0010
 	word5	,"CALT",$01,$0010
 	word5	,"MAXDE?",$01,$0010
 D5fa6:	word5	,"&HLP",$01,$0014
@@ -2353,23 +2502,23 @@ D5fa6:	word5	,"&HLP",$01,$0014
 	word5	,"IRQXV",$01,$001c
 	word5	,"CURBI?",$01,$0020
 	word5	,"&BL",$01,$0020
-	word5	,"BEEPE?",$01,$0020
+	word5	,"BEEPER",$01,$0020
 	word5	,"CQMK",$01,$0020
 	word5	,"OPFLA?",$01,$0020
-	word5	,"MEMBL??",$01,$0020
-	word5	,"^CURS??",$01,$0022
+	word5	,"MEMBLIP",$01,$0020
+	word5	,"^CURSOR",$01,$0022
 	word5	,"LP",$01,$0024
 	word5	,"BASE",$01,$0025
 	word5	,"'KEY",$01,$0026
 	word5	,"'EMIT",$01,$0028
 	word5	,"'ABOR?",$01,$002a
-	word5	,"'FILE???",$01,$002c
+	word5	,"'FILEORG",$01,$002c
 	word5	,"PATLE?",$01,$002e
 	word5	,"NMIVECT",$01,$002e
 	word5	,"LATCH?",$01,$0031
 	word5	,"SL",$01,$0032
 	word5	,"ONFLAG",$01,$0033
-	word5	,"SOFTF???",$01,$0034
+	word5	,"SOFTFLAG",$01,$0034
 D60ca:	word5	,"^HDT",$01,$0035
 D60d4:	word5	D60dc,"TP",$01,$0037
 D60dc:	word	D6191,"AP",$01,$0039
@@ -2378,28 +2527,28 @@ D60dc:	word	D6191,"AP",$01,$0039
 	word5	,"CURCT?",$01,$003d
 	word5	,"IRQX",$01,$003f
 	word5	,"IRQY",$01,$0040
-	word5	,"ESCUN",$01,$0040
+	word5	,"ESCUN",$01,$0040	; ESC - LCD unescape
 	word5	,"ROLLB??",$01,$0040
-	word5	,"ALRMB???",$01,$0040
+	word5	,"ALRMBLIP",$01,$0040
 	word5	,"CFLSH",$01,$0040
 	word5	,"CPUON",$01,$0040
 	word5	,"CBIT",$01,$0040
-	word5	,"AOTOK?",$01,$0040
+	word5	,"AOTOKE",$01,$0040
 	word5	,"POPFL??",$01,$0040
 	word5	,"MAXBA??",$01,$0040
 	word5	,"HINTF???",$01,$0040
-D6186:	word5	,"ESCIR",$01,$0041
+D6186:	word5	,"ESCIR",$01,$0041	; ESC - insert right
 D6191:	word5	D62c6,"N",$01,$0042
-	word5	D6186,"ESCDR",$01,$0042
-	word5	,"ESCSI",$01,$0043
-	word5	,"ESCUI",$01,$0044
-	word5	,"ESCSF",$01,$0045
-	word5	,"ESCUF",$01,$0046
-	word5	,"ESCDC",$01,$0047
-	word5	,"ESCFL",$01,$0048
-	word5	,"ESCCC",$01,$0049
-	word5	,"ESCHM",$01,$004a
-	word5	,"ESCWB",$01,$004b
+	word5	D6186,"ESCDR",$01,$0042	; ESC - delete right
+	word5	,"ESCSI",$01,$0043	; ESC - set inverse mode
+	word5	,"ESCUI",$01,$0044	; ESC - set uninverse mode
+	word5	,"ESCSF",$01,$0045	; ESC - set flash mode
+	word5	,"ESCUF",$01,$0046	; ESC - set unflash mode
+	word5	,"ESCDC",$01,$0047	; ESC - display character absolute
+	word5	,"ESCFL",$01,$0048	; ESC - flush I/O buffer
+	word5	,"ESCCC",$01,$0049	; ESC - set control character mode
+	word5	,"ESCHM",$01,$004a	; ESC - home cursor
+	word5	,"ESCWB",$01,$004b	; ESC - set word break
 	word5	,"%LLEN",$01,$0050
 	word5	,"DVSAV",$01,$0057
 	word5	,"CHESA?",$01,$0058
@@ -2415,12 +2564,12 @@ D6191:	word5	D62c6,"N",$01,$0042
 	word5	,"FLAG2",$01,$0064
 	word5	,"FLAG3",$01,$0065
 	word5	,"EVFLA?",$01,$0066
-	word5	,"BUFPO??",$01,$0067
+	word5	,"BUFPOSN",$01,$0067
 	word5	,"HLD",$01,$0068
 D62bf:	word5	,"Z",$01,$006c
 D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	D62bf,"IPBIT",$01,$0080
-	word5	,"RUNBL??",$01,$0080
+	word5	,"RUNBLIP",$01,$0080
 	word5	,"PENDF???",$01,$0080
 	word5	,"CNEG",$01,$0080
 	word5	,"PROGB??",$01,$0080
@@ -2443,8 +2592,8 @@ D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	,"KQO",$01,$0207
 	word5	,"PKCT",$01,$020a
 	word5	,"EVFLA??",$01,$020d
-	word5	,"(FREE??)",$01,$0215
-	word5	,"(ROTM???)",$01,$0216
+	word5	,"(FREEZE)",$01,$0215
+	word5	,"(ROTMODE)",$01,$0216
 	word5	,"SPEED",$01,$0217
 	word5	,"PCH",$01,$0218
 	word5	,"TVECT0",$01,$021b
@@ -2454,20 +2603,20 @@ D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	,"PKQ",$01,$0274
 	word5	,"KECB",$01,$0278
 	word5	,"PKEY",$01,$0279
-	word5	,"SOFTR??",$01,$027c
-	word5	,"SOFTC??",$01,$027d
-	word5	,"SOFTV???",$01,$027e
-	word5	,"SOFTA?",$01,$0280
+	word5	,"SOFTROM",$01,$027c
+	word5	,"SOFTCTL",$01,$027d
+	word5	,"SOFTVECT",$01,$027e
+	word5	,"SOFTAG",$01,$0280
 	word5	,"TQUEUE",$01,$02b3
 	word5	,"SDT",$01,$02c1
 	word5	,"FECB",$01,$02d1
 	word5	,"DECB",$01,$02d7
-	word5	,"POZEC?",$01,$02dd
+	word5	,"POZECB",$01,$02dd
 	word5	,"AOECB",$01,$02e3
 	word5	,"PSECB",$01,$02e9
 	word5	,"A-ECB",$01,$02ef
 	word5	,"NATTA??",$01,$02f1
-	word5	,"&EXTR?????",$01,$02f2
+	word5	,"&EXTRINSIC",$01,$02f2
 	word5	,"'FILE?????",$01,$02f3
 	word5	,"FP",$01,$02f5
 	word6	,"&BUF-A??",$01,$02f7
@@ -2496,7 +2645,7 @@ D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	,"CTVEC?",$01,$2025
 	word5	,"CTEXT",$01,$2027
 	word5	,"CTRID",$01,$2028
-	word5	,"ROMAD??",$01,$4000
+	word5	,"ROMADDR",$01,$4000
 	word5	,"ROMVE??",$01,$4028
 	word5	,"ROMEX?",$01,$402a
 	word5	,"CSPEED",$01,$402b
@@ -2513,14 +2662,14 @@ D6678:	word5	D66b9,"LATCH",$01,$58fe
 	word5	,"RAMAD??",$01,$8000
 	word5	,"IDICT",$01,$c000
 
-	word5	,"SET.T????",$00,$0601
+	word5	,"SET.TIMER",$00,$0601
 D66ae:	word5	,"TURN.???",$00,$0701
 D66b9:	word5	D6728,"EXIT",$00,$0000
 D66c3:	word5	D66ae,"(;P)",$00,$000d
 D66cd:	word5	D6ae5,"2DROP",$00,$000e
 	word5	D675b,"DROP",$00,$000f
-	word5	D66c3,"ORBLI?",$00,$0801
-	word5	,"ANDBL??",$00,$0901
+	word5	D66c3,"ORBLIP",$00,$0801
+	word5	,"ANDBLIP",$00,$0901
 	word6	,"SET.RA?",$00,$0010
 	word6	,"SET.RO?",$00,$00a4
 	word6	,"SET.CT??",$00,$0a01
@@ -2590,10 +2739,10 @@ D6933:	word5	D693b,"2+",$00,$0041
 D693b:	word5	D6943,"1+",$00,$0042
 D6943:	word5	D6855,"2*",$00,$0043
 D694b:	word5	D6b51,"2/",$00,$1201
-D6953:	word5	D68ee,"PUSHK??",$00,$0044
+D6953:	word5	D68ee,"PUSHKEY",$00,$0044
 D695e:	word5	D6e32,"TOGGLE",$00,$1301
-D6969:	word5	D6974,"SET.B???",$00,$0045
-D6974:	word5	D697f,"CLR.B???",$00,$0046
+D6969:	word5	D6974,"SET.BITS",$00,$0045
+D6974:	word5	D697f,"CLR.BITS",$00,$0046
 D697f:	word5	D6989,"SAVE",$00,$1401
 D6989:	word5	D6994,"RESTORE",$00,$1501
 D6994:	word5	D6aaf,"CRESTORE",$00,$1601
@@ -2661,7 +2810,7 @@ D6bed:	word5	,"M/MOD",$00,$006a
 D6bf8:	word5	D6bff,"/",$00,$2b01
 D6bff:	word5	D695e,"MOD",$00,$006b
 	word5	D6bed,"SHIFT",$00,$006c
-	word5	,"CHARB??",$00,$006d
+	word5	,"CHARBUF",$00,$006d
 	word5	,"CANCEL",$00,$006e
 D6c29:	word5	,"FLEE",$00,$2c01
 D6c33:	word5	D6c48,"MOVE",$00,$006f
@@ -2673,12 +2822,12 @@ D6c69:	word5	D6c73,"FILL",$00,$3101
 D6c73:	word5	D6c7e,"ERASE",$00,$3201
 D6c7e:	word5	D6d0b,"BLANK?",$00,$3301
 	word5	D6c5e,"<JUMP?????",$00,$3401
-	word5	,"GET.G??",$00,$3501
+	word5	,"GET.GMT",$00,$3501
 	word5	,"SD*",$00,$00ac
-	word5	,"GET.L????",$00,$00ad
-	word5	,"SET.D?????????",$00,$00ae
-	word5	,"SET.D????",$00,$0070
-	word5	,"ATTAC??",$00,$3601
+	word5	,"GET.LOCAL",$00,$00ad
+	word5	,"SET.DELAY.LONG",$00,$00ae
+	word5	,"SET.DELAY",$00,$0070
+	word5	,"ATTACHX",$00,$3601
 	word5	,"ATTACH",$00,$3701
 	word5	,"FLEE.???",$00,$3901
 	word5	,"FLEE.????",$00,$3a01
@@ -2687,14 +2836,14 @@ D6d00	word5	,"CFIND",$00,$3c01
 D6d0b:	word5	D6d13,"S+",$00,$00af
 D6d13:	word5	D6db5,"S=",$00,$3d01
 	word5	D6d00,"ENCODE",$00,$0071
-	word5	,"UPDIS?",$00,$00b0
+	word5	,"UPDISP",$00,$00b0
 	word5	,"REFRE??",$00,$00b1
 	word5	,"INS.C???",$00,$4101
 	word5	,"DEL.C???",$00,$4201
-	word5	,"SET.I??",$00,$4301
-	word5	,"UNSET????",$00,$4401
-	word5	,"SET.F???",$00,$4501
-	word5	,"UNSET?????",$00,$4601
+	word5	,"SET.INV",$00,$4301
+	word5	,"UNSET.INV",$00,$4401
+	word5	,"SET.FLSH",$00,$4501
+	word5	,"UNSET.FLSH",$00,$4601
 	word5	,"POSN",$00,$0072
 	word6	,"SCROLL",$00,$0073
 	word6	,"SCROLR",$00,$4701
@@ -2720,18 +2869,18 @@ D6e59:	word5	D77f1,"COUNT",$00,$0079
 	word5	D6e27,"(.\x22)",$00,$007a
 	word5	,"ALL-E???",$00,$5201
 	word5	,"FLAME.ON",$00,$5301
-	word5	,"SMART?????",$00,$00b3
-D6e8f:	word5	,"EMIT.???",$00,$007b
+	word5	,"SMART-POSN",$00,$00b3
+D6e8f:	word5	,"EMIT.ESC",$00,$007b
 D6e9a:	word5	D6ec2,"?KEY",$00,$007c
 D6ea4:	word5	D6eaf,"SPACE",$00,$007d
 D6eaf:	word5	D6fd4,"CR",$00,$007e
 D6eb7:	word5	D6e8f,"FAST.??",$00,$007f
-D6ec2:	word5	D6fcc,"SPACE?",$00,$5401
+D6ec2:	word5	D6fcc,"SPACES",$00,$5401
 	word5	D6eb7,"START???????",$00,$5501
 	word5	,"STOP.??????",$00,$5601
 	word5	,"A>B",$00,$00b4
-	word5	,"SOFT.???",$00,$00b5
-	word5	,"HARD.???",$00,$5701
+	word5	,"SOFT.CLR",$00,$00b5
+	word5	,"HARD.CLR",$00,$5701
 	word5	,"CLEAR",$00,$5801
 	word5	,"KBSAV?",$00,$5901
 	word5	,"KBRES?",$00,$5a01
@@ -2756,7 +2905,7 @@ D6fcc:	word5	D7044,".R",$00,$6b01
 D6fd4:	word5	D7039,".",$00,$6c01
 	word5	D6fc3,"GRAB",$00,$6d01
 	word5	,"TPSAF??",$00,$6e01
-	word5	,"LETGO",$00,$6f01
+	word5	,"LETGO",$00,$6f01		; release a TSA
 	word5	,"T!",$00,$7001
 	word5	,"SECS",$00,$7101
 	word5	,"LOC.N??????",$00,$7201
@@ -2767,14 +2916,14 @@ D7039:	word5	D75e2,"CFILE",$00,$0081
 D7044:	word5	D7111,"?KEY-???",$00,$7a01
 	word5	D702e,"NEVER",$00,$7b01
 	word5	,"@SA",$00,$7c01
-	word5	,"TYPED???",$00,$7d01
+	word5	,"TYPEDROP",$00,$7d01
 	word5	,"MENU-DRIVER",$00,$0083
-	word5	,"(FILE???)",$00,$c601
-	word5	,"FILEO??",$00,$0084
+	word5	,"(FILEORG)",$00,$c601
+	word5	,"FILEORG",$00,$0084
 	word5	,"USED",$00,$00b7
-	word5	,"NFILE?",$00,$0085
+	word5	,"NFILES",$00,$0085
 	word5	,"FSPACE",$00,$7e01
-	word5	,"FILEL??",$00,$7f01
+	word5	,"FILELEN",$00,$7f01
 	word5	,"FLIM",$00,$0086
 	word5	,"FUDGE?????",$00,$8001
 	word5	,"AVAIL",$00,$8101
@@ -2782,18 +2931,18 @@ D7044:	word5	D7111,"?KEY-???",$00,$7a01
 	word5	,"FIO-E??",$00,$0087
 	word5	,"+USED",$00,$00b9
 	word5	,"REC-M???",$00,$8201
-D7106:	word5	,"REC-C??",$00,$0088
+D7106:	word5	,"REC-CNT",$00,$0088
 D7111:	word5	D7131,"NREC",$00,$00ba
 	word5	D7106,"EXPAN?",$00,$8301
 D7126:	word5	,"SHRIN?",$00,$8401
-D7131:	word5	D71e7,"REVIS?",$00,$8501
+D7131:	word5	D71e7,"REVISE",$00,$8501
 	word5	D7126,"READ",$00,$8601
 	word5	,"WRITE",$00,$8701
-	word5	,"LOOKU?",$00,$8801
+	word5	,"LOOKUP",$00,$8801
 	word5	,"?FILE",$00,$8901
 	word5	,"MAKE",$00,$8a01
 	word5	,"OPEN",$00,$8b01
-	word5	,"DELET??????",$00,$8c01
+	word5	,"DELETE-FILE",$00,$8c01
 	word5	,"DELET?",$00,$8d01
 	word5	,"INSER?",$00,$0089
 	word5	,"MAKE-????",$00,$8e01
@@ -2807,7 +2956,7 @@ D71e7:	word5	D72ae,"?ENOU???????",$00,$008a
 	word5	D71dc,"?SF",$00,$c801
 	word5	,"RELOC",$00,$cb01
 	word5	,"KS",$00,$c901
-	word5	,"SNAP-????",$00,$ca01
+	word5	,"SNAP-FILE",$00,$ca01
 	word5	,"EOL",$00,$9701
 	word5	,"LBUF",$00,$9801
 	word5	,"LLEN",$00,$9901
@@ -2815,13 +2964,13 @@ D71e7:	word5	D72ae,"?ENOU???????",$00,$008a
 	word5	,"CURPO?",$00,$008c
 	word5	,"BUFPO?",$00,$008d
 	word5	,"SET-B????",$00,$9a01
-	word5	,"EXPEC?",$00,$00bc
-	word5	,"EDIT-????",$00,$9b01
+	word5	,"EXPECT",$00,$00bc
+	word5	,"EDIT-FILE",$00,$9b01
 	word5	,"MOVE-??",$00,$9f01
 	word5	,"COPY-????",$00,$a001
 	word5	,"DO-ED??",$00,$a101
 	word5	,"NEW-F???",$00,$a201
-D72a3:	word5	,"FSTAN?????",$00,$0094
+D72a3:	word5	,"FSTANDTYPE",$00,$0094
 D72ae:	word5	D72b6,"F+",$00,$00be
 D72b6:	word5	D72c1,"FNEGATE",$00,$a601
 D72c1:	word5	D72c9,"F-",$00,$a701
@@ -2850,37 +2999,40 @@ D7324:	word5	D7421,"F.",$00,$b001
 	word5	,"UCOMP",$01,$ffcd
 	word5	,"SLEEP",$01,$ffd0
 	word5	,"SETUP",$01,$ffd3
-	word5	,"DODOE?",$01,$ffd6
+	word5	,"DODOES",$01,$ffd6
 	word5	,"DOLAT??",$01,$ffd9
 	word5	,"GETME?",$01,$fff1
 	word5	,"GETME??",$01,$fff4
 	word5	,"POSTE??",$01,$fff7
 
-	word5	,"%REDE?",$01,$0001
-	word5	,"%INT",$01,$0002
-	word5	,"%FORW",$01,$0004
-	word5	,"%AUTO???",$01,$0008
-	word5	,"%0OPT",$01,$0010
+	word5	,"%REDEF",$01,$0001	; compiler option
+	word5	,"%INT",$01,$0002	; compiler option
+	word5	,"%FORW",$01,$0004	; compiler option
+	word5	,"%AUTOCAP",$01,$0008	; compiler option
+	word5	,"%0OPT",$01,$0010	; compiler option
 
 D7421:	word5	D748b,"BL",$01,$0020
 
 	word5	$7416,"FIND",$00,$0608
 D7433:	word5	,"EXPND",$00,$0708
-D743e:	word5	D75a3,"TO",$00,$0808
-	word5	D7433,"EXECT?",$00,$0908
+D743e:	word5	D75a3,"TO",$00,$0808	; used to write SnapFORTH capsule variables
+	word5	D7433,"EXECTO",$00,$0908
 	word5	,"UR@",$00,$0a08
+
+; SnapFORTH capsule dictionary variables
+; See SnapFORTH Referene Guide Volume II page G-4
 	word5	,"DP",$00,$0b08
 	word5	,"HDP",$00,$0c08
 	word5	,"HDP0",$00,$0d08
 	word5	,"CONTEXT",$00,$0e08
 D7480:	word5	,"CURRENT",$00,$0f08
 D748b:	word5	D749f,"TIB",$00,$1008
-D7494:	word5	D7480,"TIBLE?",$00,$1108
+D7494:	word5	D7480,"TIBLEN",$00,$1108
 D749f	word5	D76d7,"IN",$00,$1208
-	word5	D7494,"LASTI?",$00,$1308
+	word5	D7494,"LASTIN",$00,$1308
 	word5	,"STATE",$00,$1408
 	word5	,"CSP",$00,$1508
-	word5	,"V-LIN?",$00,$1608
+	word5	,"V-LINK",$00,$1608
 	word5	,"L1",$00,$1708
 	word5	,"L2",$00,$1808
 	word5	,"L3",$00,$1908
@@ -2892,10 +3044,11 @@ D749f	word5	D76d7,"IN",$00,$1208
 	word5	,"(LIT)",$00,$2308
 	word5	,"(QUIT)",$00,$2408
 	word5	,"FENCE",$00,$2508
-	word5	,"AREAP??",$00,$2608	
-	word5	,"CON-L???",$00,$2708
+	word5	,"AREAPNT",$00,$2608	
+	word5	,"CON-LINK",$00,$2708
 	word5	,"FWD",$00,$2808
 	word5	,"%HIGH",$00,$2908
+
 	word5	,"WHO",$02,L4471
 	word5	,"SET",$02,L4483
 	word5	,"CLR",$02,L448a
@@ -2942,7 +3095,7 @@ D76e2:	word5	D78cc,"-FIND",$00,$5f08
 	word5	D76cd,"?DEF",$00,$6408
 D76f7:	word5	,"TAG,",$00,$6608
 D7701:	word5	D7717,"COMPILE",$00,$6808
-D770c:	word5	D76f7,"SET.C???????",$02,L4bae
+D770c:	word5	D76f7,"SET.CONSTANT",$02,L4bae
 D7717:	wordi5	D773f,"LITERAL",$00,$6908
 	wordi5	D770c,"DLITERAL",$02,L4c12
 	wordi5	,"FLITERAL",$02,L4c1e
@@ -3013,7 +3166,7 @@ D799b:	word5	D79b9,"CVAR",$02,L533c
 D79af:	word5	,"FVAR",$02,L5346
 D79b9:	word5	D79c4,"CVECTOR",$02,L534b
 D79c4:	word5	D7b54,"VECTOR",$02,L5351
-	word5	D79af,"JUMP-???",$02,L5358
+	word5	D79af,"JUMP-TAB",$02,L5358
 	word5	,"STRIN??",$02,L5374
 	word5	,"CTABLE",$02,L537d
 	word5	,"TABLE",$02,L5384
@@ -3021,7 +3174,7 @@ D79c4:	word5	D7b54,"VECTOR",$02,L5351
 	word5	,"QUERY",$00,$9808
 	word5	,"(LITERAL)",$00,$0308
 	word5	,"CEXECUTE",$02,L540b
-	word5	,"INTER????",$00,$9908
+	word5	,"INTERPRET",$00,$9908
 	word5	,"CLEAN??",$02,L547c
 	word5	,"((QUIT))",$00,$0508
 	word5	,"QUIT",$00,$0108
@@ -3041,11 +3194,11 @@ D79c4:	word5	D7b54,"VECTOR",$02,L5351
 	word5	,"(LOAD)",$00,$a008
 	word5	,"LOAD",$02,L5ac5
 	word5	,"LOAD\x22",$02,L5b28
-	word5	,"DEVLO??",$02,L5b30
-	word5	,"DEVLO???",$02,L5b47
+	word5	,"DEVLOAD",$02,L5b30
+	word5	,"DEVLOAD\x22",$02,L5b47
 	word5	,"EDIT",$02,L5b4f
 	word5	,"SAVES???",$02,L5b6e
-D7b29:	wordi5	,"GET-T???",$02,L5bbc
+D7b29:	wordi5	,"GET-TYPE",$02,L5bbc
 D7b34:	wordi5	D7b3f,"ENDIF",$00,$a108
 D7b3f:	wordi5	D7b6a,"THEN",$00,$a108
 D7b49:	wordi5	D7b29,"IF.ITS",$02,L5c51	
@@ -3053,7 +3206,7 @@ D7b54:	wordi5	D7b5f,"DOCASE",$02,L5c7f
 D7b5f:	wordi5	D7bbe,"ENDCASE",$02,L5c83
 D7b6a:	wordi5	D7b95,"BEGIN",$02,L5c87
 	wordi5	D7b49,"IF.L",$02,L5c8d
-	wordi5	,"WHILE??",$02,L5c95
+	wordi5	,"WHILE.L",$02,L5c95
 D7b8a:	wordi5	,"ELSE.?",$02,L5c9b
 D7b95:	wordi5	D7ba0,"UNTIL",$02,L5ca6
 D7ba0:	wordi5	D7bb6,"REPEAT",$02,L5cb9
@@ -3067,11 +3220,11 @@ D7be6:	wordi5	D7bef,"=IF",$02,L5ced
 D7bef:	wordi5	D7bf8,"<IF",$02,L5cf1
 D7bf8:	wordi5	D7c03,"NOTIF",$02,L5cf5
 D7c03:	wordi5	D7c4d,"IF",$02,L5cf9
-	wordi5	D7bab,"CASEW????",$02,L5cfd
+	wordi5	D7bab,"CASEWHILE",$02,L5cfd
 	wordi5	,"=WHILE",$02,L5d03
 	wordi5	,"<WHILE",$02,L5d09
 	wordi5	,"NOTWHILE",$02,L5d0f
-D7c37:	wordi5	,"WHILE????",$02,L5d15
+D7c37:	wordi5	,"WHILE.ITS",$02,L5d15
 D7c42:	wordi5	D6a87,"WHILE",$02,L5d1b
 D7c4d:	wordi5	D7b34,"ELSE",$02,L5d21
 D7c57:	wordi5	D7c5e,"\\",$02,L5d28
