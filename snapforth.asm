@@ -215,7 +215,7 @@ tag_table_8:
 		fdb	x_tag_84a	; -WORD
 		fdb	x_tag_84b
 		fdb	x_tag_84c
-		fdb	x_tag_84d	; ?PAIR?
+		fdb	x_tag_84d	; ?PAIRS
 		fdb	x_tag_84e	; !CSP
 		fdb	x_tag_84f	; ?CSP
 		fdb	x_tag_850	; ?COMP
@@ -260,7 +260,7 @@ tag_table_8:
 		fdb	x_tag_877
 		fdb	x_tag_878	; CFA
 		fdb	x_tag_879
-		fdb	x_tag_87a	; TT.OR????
+		fdb	x_tag_87a	; TT.ORIGIN
 		fdb	x_tag_87b	; STAG#
 		fdb	x_tag_87c	; LTAG#
 		fdb	x_tag_87d	; EXT#
@@ -285,7 +285,7 @@ tag_table_8:
 		fdb	x_tag_890	; CODEC
 		fdb	x_tag_891
 		fdb	x_tag_892
-		fdb	x_tag_893	; CREATE? <BUILDS?
+		fdb	x_tag_893	; CREATEC <BUILDSC
 		fdb	x_tag_894
 		fdb	x_tag_895
 		fdb	x_tag_896
@@ -822,7 +822,7 @@ x_tag_84c:
 	fcb	$08,$4b
 	cstr	"SYSTEM ERROR"
 
-; ?PAIR?
+; ?PAIRS
 x_tag_84d:
 	fcb	$00
 	fcb	$48,$08,$4c
@@ -1328,7 +1328,7 @@ x_tag_879:	fcb	$00
 S4e0c:	JSR	Sffd6
 	fcb	$17,$08,$0a,$15,$3d,$08,$09,$00	; "....=..."
 
-; TT.OR????
+; TT.ORIGIN
 x_tag_87a:
 	JSR	S4e0c
 	fcb	$00
@@ -1362,12 +1362,12 @@ x_tag_880:
 	JSR	S4e0c
 	fcb	$0c
 
-; SHORT.????
+; SHORT.TAGS
 L4e33:
 	fcb	$00
 	fcb	$33,$08,$08,$08,$80
 
-; LONG.????
+; LONG.TAGS
 L4e39:
 	fcb	$00	; "..3....."
 	fcb	$32,$08,$08,$08,$80,$00,$13,$33	; "2......3"
@@ -1393,7 +1393,7 @@ x_tag_881:
 	fcb	$4a,$39,$08,$7f,$28,$3a,$08,$2e	; "J9..(:.."
 	fcb	$08,$28,$3a,$28
 
-; CAPIN??
+; CAPINIT
 L4eca:
 	fcb	$00
 	fcb	$08,$2e,$08	; ".(:(...."
@@ -1412,7 +1412,7 @@ x_tag_884:
 	fcb	$00
 	fcb	$33,$08,$08,$08,$14
 
-; TABLE?
+; TABLES
 L4efa:
 	fcb	$00
 	fcb	$08,$53	; "3......S"
@@ -1653,7 +1653,7 @@ x_tag_882:
 	fcb	$00
 	fcb	$11,$20,$4a,$08,$92         	; ". J.."
 
-; CREATE? <BUILDS?
+; CREATEC <BUILDSC
 x_tag_893:
 	fcb	$00
 	fcb	$08,$8a,$35,$08,$56,$11,$20,$4a	; "..5.V. J"
@@ -1835,7 +1835,7 @@ x_tag_899	equ	*-1
 	fcb	$24,$0f,$52,$07,$24,$01,$0c,$0c	; "$.R.$..."
 	fcb	$2f,$52,$53,$60
 
-; CLEAN??
+; CLEANUP
 L547c:
 	fcb	$00
 	fcb	$08,$43,$27	; "/RS`..C'"
@@ -2001,7 +2001,7 @@ L56ef:
 	fcb	$08,$08,$16,$08,$79,$20,$d6,$ff	; "....y .."
 	fcb	$08,$08,$08,$0e
 
-; DEFIN??????
+; DEFINITIONS
 L5719:
 	fcb	$00
 	fcb	$08,$0e,$08	; "........"
@@ -2122,7 +2122,7 @@ L5935:
 	fcb	$45,$d2,$d8,$59,$85,$49,$46,$45	; "E..Y.IFE"
 	fcb	$4e,$c4,$e0,$59,$81,$80
 
-; OTHER????
+; OTHERWISE
 L59ec:
 	fcb	$00
 	fcb	$08	; "N..Y...."
@@ -2218,7 +2218,7 @@ L5b4f:
 	fcb	$01,$8a,$8a,$2b,$81,$41,$18,$34	; "...+.A.4"
 	fcb	$01,$a1
 
-; SAVES???
+; SAVESNAP
 L5b6e:
 	fcb	$00
 	fcb	$08,$49,$08,$7a,$3e	; "....I.z>"
@@ -2298,13 +2298,13 @@ L5c8d:
 	fcb	$08,$68,$01	; "P.I...h."
 	fcb	$18,$0c,$07,$5c
 
-; WHILE??
+; WHILE.L
 L5c95:
 	fcb	$00
 	fcb	$0c,$8d,$5c	; "...\...\"
 	fcb	$2f,$3d
 
-; ELSE.?
+; ELSE.L
 L5c9b:
 	fcb	$00
 	fcb	$08,$68,$01,$19,$0c	; "/=..h..."
@@ -2426,12 +2426,12 @@ L5d34:
 	fcb	$08,$68,$08,$79	; "..Z..h.y"
 	fcb	$35,$08,$56,$11,$d6,$ff,$08,$55	; "5.V....U"
 
-; ABORT?
+; ABORT"
 L5d41:
 	fcb	$00
 	fcb	$08,$68,$08,$4b,$08,$76
 
-; ?ABOR??
+; ?ABORT"
 L5d48:	fcb	$00	; "..h.K.v."
 	fcb	$08,$68,$08,$4c,$08,$76,$00,$35	; ".h.L.v.5"
 	fcb	$a6,$00,$14,$d0,$00,$14,$10,$00	; "........"
@@ -2500,20 +2500,20 @@ D5fa6:	word5	,"&HLP",$01,$0014
 	word5	,"&ESC",$01,$001b
 	word5	,"DBUFL",$01,$001b
 	word5	,"IRQXV",$01,$001c
-	word5	,"CURBI?",$01,$0020
+	word5	,"CURBIT",$01,$0020
 	word5	,"&BL",$01,$0020
 	word5	,"BEEPER",$01,$0020
 	word5	,"CQMK",$01,$0020
-	word5	,"OPFLA?",$01,$0020
+	word5	,"OPFLAG",$01,$0020
 	word5	,"MEMBLIP",$01,$0020
 	word5	,"^CURSOR",$01,$0022
 	word5	,"LP",$01,$0024
 	word5	,"BASE",$01,$0025
 	word5	,"'KEY",$01,$0026
 	word5	,"'EMIT",$01,$0028
-	word5	,"'ABOR?",$01,$002a
+	word5	,"'ABORT",$01,$002a
 	word5	,"'FILEORG",$01,$002c
-	word5	,"PATLE?",$01,$002e
+	word5	,"PATLEN",$01,$002e
 	word5	,"NMIVECT",$01,$002e
 	word5	,"LATCH?",$01,$0031
 	word5	,"SL",$01,$0032
@@ -2522,21 +2522,21 @@ D5fa6:	word5	,"&HLP",$01,$0014
 D60ca:	word5	,"^HDT",$01,$0035
 D60d4:	word5	D60dc,"TP",$01,$0037
 D60dc:	word	D6191,"AP",$01,$0039
-	word5	D60ca,"CURRA?",$01,$003b
-	word5	,"CURRO?",$01,$003c
-	word5	,"CURCT?",$01,$003d
+	word5	D60ca,"CURRAM",$01,$003b
+	word5	,"CURROM",$01,$003c
+	word5	,"CURCTL",$01,$003d
 	word5	,"IRQX",$01,$003f
 	word5	,"IRQY",$01,$0040
 	word5	,"ESCUN",$01,$0040	; ESC - LCD unescape
-	word5	,"ROLLB??",$01,$0040
+	word5	,"ROLLBIT",$01,$0040
 	word5	,"ALRMBLIP",$01,$0040
 	word5	,"CFLSH",$01,$0040
 	word5	,"CPUON",$01,$0040
 	word5	,"CBIT",$01,$0040
 	word5	,"AOTOKE",$01,$0040
-	word5	,"POPFL??",$01,$0040
-	word5	,"MAXBA??",$01,$0040
-	word5	,"HINTF???",$01,$0040
+	word5	,"POPFLAG",$01,$0040
+	word5	,"MAXBANK",$01,$0040
+	word5	,"HINTFLAG",$01,$0040
 D6186:	word5	,"ESCIR",$01,$0041	; ESC - insert right
 D6191:	word5	D62c6,"N",$01,$0042
 	word5	D6186,"ESCDR",$01,$0042	; ESC - delete right
@@ -2551,31 +2551,31 @@ D6191:	word5	D62c6,"N",$01,$0042
 	word5	,"ESCWB",$01,$004b	; ESC - set word break
 	word5	,"%LLEN",$01,$0050
 	word5	,"DVSAV",$01,$0057
-	word5	,"CHESA?",$01,$0058
+	word5	,"CHESAV",$01,$0058
 	word5	,"CHSAV",$01,$005a
-	word5	,"PCASA?",$01,$005c
+	word5	,"PCASAV",$01,$005c
 	word5	,"RCSAV",$01,$005d
 	word5	,"IOSAV",$01,$005e
-	word5	,"LATSA?",$01,$005f
-	word5	,"HDTSA?",$01,$0060
+	word5	,"LATSAV",$01,$005f
+	word5	,"HDTSAV",$01,$0060
 	word5	,"X1SAV",$01,$0061
 	word5	,"XSAVE",$01,$0062
 	word5	,"FLAG1",$01,$0063
 	word5	,"FLAG2",$01,$0064
 	word5	,"FLAG3",$01,$0065
-	word5	,"EVFLA?",$01,$0066
+	word5	,"EVFLAG",$01,$0066
 	word5	,"BUFPOSN",$01,$0067
 	word5	,"HLD",$01,$0068
 D62bf:	word5	,"Z",$01,$006c
 D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	D62bf,"IPBIT",$01,$0080
 	word5	,"RUNBLIP",$01,$0080
-	word5	,"PENDF???",$01,$0080
+	word5	,"PENDFLAG",$01,$0080
 	word5	,"CNEG",$01,$0080
-	word5	,"PROGB??",$01,$0080
-	word5	,"PIPFL??",$01,$0080
+	word5	,"PROGBIT",$01,$0080
+	word5	,"PIPFLAG",$01,$0080
 	word5	,"AOENB",$01,$0080
-	word5	,"INTFL??",$01,$0080
+	word5	,"INTFLAG",$01,$0080
 	word5	,"&LK",$01,$0086
 	word5	,"&C1",$01,$008b
 	word5	,"&C2",$01,$008c
@@ -2583,15 +2583,15 @@ D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	,"&C4",$01,$008e
 	word5	,"%FLEN",$01,$00aa
 	word5	,"SHINT",$01,$00c0
-	word5	,"SPINI?",$01,$00ff
+	word5	,"SPINIT",$01,$00ff
 	word5	,"LSTK",$01,$0100
 	word5	,"RSTK",$01,$01fd
-	word5	,"&CFIL?",$01,$0201
-	word5	,"SLPFL?",$01,$0204
+	word5	,"&CFILE",$01,$0201
+	word5	,"SLPFLG",$01,$0204
 	word5	,"KQI",$01,$0206
 	word5	,"KQO",$01,$0207
 	word5	,"PKCT",$01,$020a
-	word5	,"EVFLA??",$01,$020d
+	word5	,"EVFLAG1",$01,$020d
 	word5	,"(FREEZE)",$01,$0215
 	word5	,"(ROTMODE)",$01,$0216
 	word5	,"SPEED",$01,$0217
@@ -2615,19 +2615,19 @@ D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	,"AOECB",$01,$02e3
 	word5	,"PSECB",$01,$02e9
 	word5	,"A-ECB",$01,$02ef
-	word5	,"NATTA??",$01,$02f1
+	word5	,"NATTACH",$01,$02f1
 	word5	,"&EXTRINSIC",$01,$02f2
-	word5	,"'FILE?????",$01,$02f3
+	word5	,"'FILE-COND",$01,$02f3
 	word5	,"FP",$01,$02f5
-	word6	,"&BUF-A??",$01,$02f7
-	word6	,"&BUF-L??",$01,$02f9
-	word5	,"&DATA????",$01,$02fa
-	word5	,"&EOL-???",$01,$02fb
-	word5	,"&CURP??",$01,$02fd
-	word5	,"&INIT???????",$01,$02fe
+	word6	,"&BUF-ADR",$01,$02f7
+	word6	,"&BUF-LEN",$01,$02f9
+	word5	,"&DATA-LEN",$01,$02fa
+	word5	,"&EOL-TAG",$01,$02fb
+	word5	,"&CURPOS",$01,$02fd
+	word5	,"&INIT-CURPOS",$01,$02fe
 	word5	,"&LINE",$01,$02ff
-	word5	,"&MAX-???",$01,$0301
-	word5	,"&EOF-???",$01,$0302
+	word5	,"&MAX-LEN",$01,$0301
+	word5	,"&EOF-TAG",$01,$0302
 	word5	,"&MODE",$01,$0304
 	word5	,"&LOCK",$01,$0305
 	word5	,"&LBUF",$01,$0306
@@ -2637,17 +2637,17 @@ D62c6:	word5	D67e2,"&APS",$01,$0075
 	word5	,"&MEM",$01,$036f
 	word5	,"GMTF",$01,$0378
 	word5	,"GMT",$01,$0379
-	word5	,"UNCOM??????",$01,$037d
-	word5	,"FILES????",$01,$038d
+	word5	,"UNCOMMITTED",$01,$037d
+	word5	,"FILESPACE",$01,$038d
 	word5	,"CTROM",$01,$2000
 	word	,"CTRFLAGS",$01,$2023
 	word	,"CTRFLAG2",$01,$2024
-	word5	,"CTVEC?",$01,$2025
+	word5	,"CTVECT",$01,$2025
 	word5	,"CTEXT",$01,$2027
 	word5	,"CTRID",$01,$2028
 	word5	,"ROMADDR",$01,$4000
-	word5	,"ROMVE??",$01,$4028
-	word5	,"ROMEX?",$01,$402a
+	word5	,"ROMVECT",$01,$4028
+	word5	,"ROMEXT",$01,$402a
 	word5	,"CSPEED",$01,$402b
 D662a:	word5	,"ROMID",$01,$402c
 D6635:	word5	D6646,"I/O",$01,$47fc
@@ -2659,21 +2659,21 @@ D6646:	word5	D6678,"DSPLY",$01,$5800
 D666f:	word5	,"THI",$01,$58fd
 D6678:	word5	D66b9,"LATCH",$01,$58fe
 	word5	D666f,"YOFF",$01,$58ff
-	word5	,"RAMAD??",$01,$8000
+	word5	,"RAMADDR",$01,$8000
 	word5	,"IDICT",$01,$c000
 
 	word5	,"SET.TIMER",$00,$0601
-D66ae:	word5	,"TURN.???",$00,$0701
+D66ae:	word5	,"TURN.OFF",$00,$0701
 D66b9:	word5	D6728,"EXIT",$00,$0000
 D66c3:	word5	D66ae,"(;P)",$00,$000d
 D66cd:	word5	D6ae5,"2DROP",$00,$000e
 	word5	D675b,"DROP",$00,$000f
 	word5	D66c3,"ORBLIP",$00,$0801
 	word5	,"ANDBLIP",$00,$0901
-	word6	,"SET.RA?",$00,$0010
-	word6	,"SET.RO?",$00,$00a4
-	word6	,"SET.CT??",$00,$0a01
-D671c:	word6	,"SET.CR??",$00,$3801
+	word6	,"SET.RAM",$00,$0010
+	word6	,"SET.ROM",$00,$00a4
+	word6	,"SET.CTRL",$00,$0a01
+D671c:	word6	,"SET.CROM",$00,$3801
 D6728:	word5	D6751,"LIT",$00,$0011
 	word5	D671c,"FLIT",$00,$c701
 	word5	,"CLIT3",$00,$0012
@@ -2692,7 +2692,7 @@ D67a8:	word5	D67b2,"OVER",$00,$001c
 D67b2:	word5	D67d9,"PICK",$00,$001d
 D67bc:	word5	D78b9,"+C!",$00,$001e
 	word5	D6784,"SP@",$00,$001f
-D67ce:	word5	,"SET.S?",$00,$0c01
+D67ce:	word5	,"SET.SP",$00,$0c01
 D67d9:	word5	D67ec,"ROT",$00,$0020
 D67e2:	word5	D6969,"ROLL",$00,$0021
 D67ec:	word5	D6aff,"SWAP",$00,$0022
@@ -2703,7 +2703,7 @@ D6810:	word5	D6821,"R>",$00,$0024
 D6818:	word5	D67ce,"RP!",$00,$0d01
 D6821:	word5	D68c9,"R",$00,$0025
 	word5	D6818,"RP@",$00,$0e01
-D6831:	word5	,"SET.R?",$00,$0f01
+D6831:	word5	,"SET.RP",$00,$0f01
 D683c:	word5	D69b5,"0=",$00,$0028
 	word5	D68d4,"NOT",$00,$0028
 D684d:	word5	,"0<",$00,$0029
@@ -2722,7 +2722,7 @@ D689b:	word5	D6acf,"-1",$00,$0034
 	word5	,"30H",$00,$0036
 	word5	,"80H",$00,$0037
 D68be:	word5	,"#DECB",$00,$00a5
-D68c9:	word5	D6915,"FALSI??",$00,$0038
+D68c9:	word5	D6915,"FALSIFY",$00,$0038
 D68d4:	word5	D68dd,"AND",$00,$0039
 D68dd:	word5	D69bc,"OR",$00,$003a
 D68e5:	word5	D68f5,"XOR",$00,$00a6
@@ -2769,7 +2769,7 @@ D6a50:	word5	D7bc7,"LEAVE",$00,$0055
 	word5	,"(LOOP)",$00,$0057
 	word5	,"(CASE)",$00,$0058
 D6a7c:	word5	,"(?DO)",$00,$0059
-D6a87:	word5	D7c57,"BOUND?",$00,$00a9
+D6a87:	word5	D7c57,"BOUNDS",$00,$00a9
 D6a92:	word5	D7890,"?RANGE",$00,$005a
 	word5	D6a7c,"B>A",$00,$005b
 D6aa6:	word5	,"L>U",$00,$1a01
@@ -2816,12 +2816,12 @@ D6c29:	word5	,"FLEE",$00,$2c01
 D6c33:	word5	D6c48,"MOVE",$00,$006f
 D6c3d:	word5	D6c29,"DMOVE",$00,$2d01
 D6c48:	word5	D6c69,"CMOVE",$00,$2e01
-	word5	D6c3d,"SETBA???",$00,$2f01
-D6c5e:	word5	,"BIGMO??",$00,$3001
+	word5	D6c3d,"SETBANKS",$00,$2f01
+D6c5e:	word5	,"BIGMOVE",$00,$3001
 D6c69:	word5	D6c73,"FILL",$00,$3101
 D6c73:	word5	D6c7e,"ERASE",$00,$3201
-D6c7e:	word5	D6d0b,"BLANK?",$00,$3301
-	word5	D6c5e,"<JUMP?????",$00,$3401
+D6c7e:	word5	D6d0b,"BLANKS",$00,$3301
+	word5	D6c5e,"<JUMP-TAB>",$00,$3401
 	word5	,"GET.GMT",$00,$3501
 	word5	,"SD*",$00,$00ac
 	word5	,"GET.LOCAL",$00,$00ad
@@ -2829,17 +2829,17 @@ D6c7e:	word5	D6d0b,"BLANK?",$00,$3301
 	word5	,"SET.DELAY",$00,$0070
 	word5	,"ATTACHX",$00,$3601
 	word5	,"ATTACH",$00,$3701
-	word5	,"FLEE.???",$00,$3901
-	word5	,"FLEE.????",$00,$3a01
+	word5	,"FLEE.CAP",$00,$3901
+	word5	,"FLEE.CROM",$00,$3a01
 	word5	,"LOCATE",$00,$3b01
 D6d00	word5	,"CFIND",$00,$3c01
 D6d0b:	word5	D6d13,"S+",$00,$00af
 D6d13:	word5	D6db5,"S=",$00,$3d01
 	word5	D6d00,"ENCODE",$00,$0071
 	word5	,"UPDISP",$00,$00b0
-	word5	,"REFRE??",$00,$00b1
-	word5	,"INS.C???",$00,$4101
-	word5	,"DEL.C???",$00,$4201
+	word5	,"REFRESH",$00,$00b1
+	word5	,"INS.CH.R",$00,$4101
+	word5	,"DEL.CH.R",$00,$4201
 	word5	,"SET.INV",$00,$4301
 	word5	,"UNSET.INV",$00,$4401
 	word5	,"SET.FLSH",$00,$4501
@@ -2850,9 +2850,9 @@ D6d13:	word5	D6db5,"S=",$00,$3d01
 	word5	,"WAIT",$00,$000a
 D6daa:	word5	,"WAITM",$00,$000b
 D6db5:	word5	D6e9a,"SQUEAK",$00,$4801
-	word5	D6daa,"LCD.C?",$00,$4901
+	word5	D6daa,"LCD.CR",$00,$4901
 	word5	,"CGRTN",$00,$4a01
-	word5	,"DISP.??",$00,$4b01
+	word5	,"DISP.CH",$00,$4b01
 	word5	,"RCTL",$00,$4c01
 	word5	,"ROP",$00,$00b2
 	word5	,"RIP",$00,$4d01
@@ -2867,32 +2867,32 @@ D6e45:	word5	D6e4f,"BEEP",$00,$0077
 D6e4f:	word5	D6e59,"TYPE",$00,$0078
 D6e59:	word5	D77f1,"COUNT",$00,$0079
 	word5	D6e27,"(.\x22)",$00,$007a
-	word5	,"ALL-E???",$00,$5201
+	word5	,"ALL-EMIT",$00,$5201
 	word5	,"FLAME.ON",$00,$5301
 	word5	,"SMART-POSN",$00,$00b3
 D6e8f:	word5	,"EMIT.ESC",$00,$007b
 D6e9a:	word5	D6ec2,"?KEY",$00,$007c
 D6ea4:	word5	D6eaf,"SPACE",$00,$007d
 D6eaf:	word5	D6fd4,"CR",$00,$007e
-D6eb7:	word5	D6e8f,"FAST.??",$00,$007f
+D6eb7:	word5	D6e8f,"FAST.CR",$00,$007f
 D6ec2:	word5	D6fcc,"SPACES",$00,$5401
-	word5	D6eb7,"START???????",$00,$5501
-	word5	,"STOP.??????",$00,$5601
+	word5	D6eb7,"START.CURSOR",$00,$5501
+	word5	,"STOP.CURSOR",$00,$5601
 	word5	,"A>B",$00,$00b4
 	word5	,"SOFT.CLR",$00,$00b5
 	word5	,"HARD.CLR",$00,$5701
 	word5	,"CLEAR",$00,$5801
-	word5	,"KBSAV?",$00,$5901
-	word5	,"KBRES?",$00,$5a01
-	word5	,"SAVE.???",$00,$5b01
-	word5	,"SAVE.????",$00,$5c01
-	word5	,"REST.???",$00,$5d01
-	word5	,"RESTO??????",$00,$5e01
-	word5	,"RESTO???????",$00,$5f01
-	word5	,"SOFT.????",$00,$6001
-	word5	,"SIZER??",$00,$6101
-	word5	,"COLD.?????",$00,$6201
-	word5	,"CAN.L???",$00,$6301
+	word5	,"KBSAVE",$00,$5901
+	word5	,"KBREST",$00,$5a01
+	word5	,"SAVE.KEY",$00,$5b01
+	word5	,"SAVE.TASK",$00,$5c01
+	word5	,"REST.KEY",$00,$5d01
+	word5	,"RESTORE.RAM",$00,$5e01
+	word5	,"RESTORE.TASK",$00,$5f01
+	word5	,"SOFT.EMIT",$00,$6001
+	word5	,"SIZERAM",$00,$6101
+	word5	,"COLD.START",$00,$6201
+	word5	,"CAN.LIST",$00,$6301
 	word5	,"HOLD",$00,$0080
 	word5	,"<#",$00,$6401
 	word5	,"#>",$00,$6501
@@ -2904,16 +2904,16 @@ D6fc3:	word5	,"D.R",$00,$6a01
 D6fcc:	word5	D7044,".R",$00,$6b01
 D6fd4:	word5	D7039,".",$00,$6c01
 	word5	D6fc3,"GRAB",$00,$6d01
-	word5	,"TPSAF??",$00,$6e01
+	word5	,"TPSAFE?",$00,$6e01
 	word5	,"LETGO",$00,$6f01		; release a TSA
 	word5	,"T!",$00,$7001
 	word5	,"SECS",$00,$7101
-	word5	,"LOC.N??????",$00,$7201
-	word5	,"LOC.P??",$00,$7301
+	word5	,"LOC.NXT.CAP",$00,$7201
+	word5	,"LOC.PRG",$00,$7301
 	word5	,"RAM.N",$00,$7401
-D702e:	word5	,"DVCSE?",$00,$7501
+D702e:	word5	,"DVCSET",$00,$7501
 D7039:	word5	D75e2,"CFILE",$00,$0081
-D7044:	word5	D7111,"?KEY-???",$00,$7a01
+D7044:	word5	D7111,"?KEY-HIT",$00,$7a01
 	word5	D702e,"NEVER",$00,$7b01
 	word5	,"@SA",$00,$7c01
 	word5	,"TYPEDROP",$00,$7d01
@@ -2925,16 +2925,16 @@ D7044:	word5	D7111,"?KEY-???",$00,$7a01
 	word5	,"FSPACE",$00,$7e01
 	word5	,"FILELEN",$00,$7f01
 	word5	,"FLIM",$00,$0086
-	word5	,"FUDGE?????",$00,$8001
+	word5	,"FUDGE-FLIM",$00,$8001
 	word5	,"AVAIL",$00,$8101
 	word5	,"?ROOM",$00,$00b8
-	word5	,"FIO-E??",$00,$0087
+	word5	,"FIO-ERR",$00,$0087
 	word5	,"+USED",$00,$00b9
-	word5	,"REC-M???",$00,$8201
+	word5	,"REC-MOVE",$00,$8201
 D7106:	word5	,"REC-CNT",$00,$0088
 D7111:	word5	D7131,"NREC",$00,$00ba
-	word5	D7106,"EXPAN?",$00,$8301
-D7126:	word5	,"SHRIN?",$00,$8401
+	word5	D7106,"EXPAND",$00,$8301
+D7126:	word5	,"SHRINK",$00,$8401
 D7131:	word5	D71e7,"REVISE",$00,$8501
 	word5	D7126,"READ",$00,$8601
 	word5	,"WRITE",$00,$8701
@@ -2943,16 +2943,16 @@ D7131:	word5	D71e7,"REVISE",$00,$8501
 	word5	,"MAKE",$00,$8a01
 	word5	,"OPEN",$00,$8b01
 	word5	,"DELETE-FILE",$00,$8c01
-	word5	,"DELET?",$00,$8d01
-	word5	,"INSER?",$00,$0089
-	word5	,"MAKE-????",$00,$8e01
-	word5	,".NO-R???",$00,$9001
-	word5	,"FILE-???",$00,$9101
-	word5	,"?VISI???",$00,$9201
+	word5	,"DELETE",$00,$8d01
+	word5	,"INSERT",$00,$0089
+	word5	,"MAKE-ROOM",$00,$8e01
+	word5	,".NO-ROOM",$00,$9001
+	word5	,"FILE-TAG",$00,$9101
+	word5	,"?VISIBLE",$00,$9201
 	word5	,"E-L",$00,$9301
 	word5	,".FILE",$00,$9401
-D71dc:	word5	,"OPEN-????",$00,$9501
-D71e7:	word5	D72ae,"?ENOU???????",$00,$008a
+D71dc:	word5	,"OPEN-FILE",$00,$9501
+D71e7:	word5	D72ae,"?ENOUGH-ROOM",$00,$008a
 	word5	D71dc,"?SF",$00,$c801
 	word5	,"RELOC",$00,$cb01
 	word5	,"KS",$00,$c901
@@ -2961,15 +2961,15 @@ D71e7:	word5	D72ae,"?ENOU???????",$00,$008a
 	word5	,"LBUF",$00,$9801
 	word5	,"LLEN",$00,$9901
 	word5	,"CCNT",$00,$008b
-	word5	,"CURPO?",$00,$008c
-	word5	,"BUFPO?",$00,$008d
-	word5	,"SET-B????",$00,$9a01
+	word5	,"CURPOS",$00,$008c
+	word5	,"BUFPOS",$00,$008d
+	word5	,"SET-BLIPS",$00,$9a01
 	word5	,"EXPECT",$00,$00bc
 	word5	,"EDIT-FILE",$00,$9b01
-	word5	,"MOVE-??",$00,$9f01
-	word5	,"COPY-????",$00,$a001
-	word5	,"DO-ED??",$00,$a101
-	word5	,"NEW-F???",$00,$a201
+	word5	,"MOVE-IT",$00,$9f01
+	word5	,"COPY-FILE",$00,$a001
+	word5	,"DO-EDIT",$00,$a101
+	word5	,"NEW-FILE",$00,$a201
 D72a3:	word5	,"FSTANDTYPE",$00,$0094
 D72ae:	word5	D72b6,"F+",$00,$00be
 D72b6:	word5	D72c1,"FNEGATE",$00,$a601
@@ -2981,29 +2981,29 @@ D72e3:	word5	D72f6,"F!",$00,$aa01
 D72eb:	word5	D72a3,"10EXP",$00,$0095
 D72f6:	word5	D72fe,"F*",$00,$ab01
 D72fe:	word5	D7324,"F/",$00,$ac01
-	word5	D72eb,"FROUN?",$00,$ad01
+	word5	D72eb,"FROUND",$00,$ad01
 	word5	,"F#",$00,$ae01
 D7319:	word5	,"FP>ASC",$00,$af01
 D7324:	word5	D7421,"F.",$00,$b001
 	word5	D7319,"F.EXT",$00,$b101
-	word5	,"ASC>F?",$00,$b201
+	word5	,"ASC>FP",$00,$b201
 	word5	,"CEMIT",$00,$b401
 	word5	,"CALC",$00,$b501
 	word5	,"S.T",$00,$b701
 	word5	,"E.T",$00,$b901
 	word5	,"STM",$00,$ba01
-	word5	,"SHOW.????",$00,$bb01
-	word5	,"INTAP?",$00,$c001
+	word5	,"SHOW.TIME",$00,$bb01
+	word5	,"INTAPS",$00,$c001
 
 	word5	,"SCOMP",$01,$ffca
 	word5	,"UCOMP",$01,$ffcd
 	word5	,"SLEEP",$01,$ffd0
 	word5	,"SETUP",$01,$ffd3
 	word5	,"DODOES",$01,$ffd6
-	word5	,"DOLAT??",$01,$ffd9
-	word5	,"GETME?",$01,$fff1
-	word5	,"GETME??",$01,$fff4
-	word5	,"POSTE??",$01,$fff7
+	word5	,"DOLATCH",$01,$ffd9
+	word5	,"GETMEM",$01,$fff1
+	word5	,"GETMEMT",$01,$fff4
+	word5	,"POSTECB",$01,$fff7
 
 	word5	,"%REDEF",$01,$0001	; compiler option
 	word5	,"%INT",$01,$0002	; compiler option
@@ -3121,18 +3121,18 @@ D77ea:	wordi1	D68e5,"^?",$02,L4d81
 D77f1:	word5	D77f9,"S\x22",$00,$7608
 D77f9:	wordi5	D6ea4,".\x22",$02,L4d95
 	word5	D77d8,"CFA",$00,$7808
-	word5	,"TT.OR????",$00,$7a08
+	word5	,"TT.ORIGIN",$00,$7a08
 	word5	,"STAG#",$00,$7b08
 	word5	,"LTAG#",$00,$7c08
 	word5	,"EXT#",$00,$7d08
 	word5	,"#SHORTS",$00,$7e08
 	word5	,"#LONGS",$00,$7f08
-	word5	,"SHORT.????",$02,L4e33
-	word5	,"LONG.????",$02,L4e39
-D7861:	wordi5	,"CAPIN??",$02,L4eca
+	word5	,"SHORT.TAGS",$02,L4e33
+	word5	,"LONG.TAGS",$02,L4e39
+D7861:	wordi5	,"CAPINIT",$02,L4eca
 	wordi5	D7992,"]",$00,$8308
 D7873:	wordi5	,"[",$00,$8408
-	word5	D7861,"TABLE?",$02,L4efa
+	word5	D7861,"TABLES",$02,L4efa
 D7885:	word5	,"(CREATE)",$00,$8508
 D7890:	word5	D7899,"TAG",$02,L5003
 D7899:	word5	D78a4,"SHORT",$02,L50b6
@@ -3151,9 +3151,9 @@ D790b:	wordi5	,";P",$02,L520f
 D7913:	wordi5	D66cd,";",$02,L5219
 	wordi5	D790b,";CODE",$02,L5223
 	word5	,"CREATE",$00,$8208
-	word5	,"CREATE?",$00,$9308
+	word5	,"CREATEC",$00,$9308
 	word5	,"<BUILDS",$00,$8208
-	word5	,"<BUILDS?",$00,$9308
+	word5	,"<BUILDSC",$00,$9308
 	word5	,"IMMEDIATE",$02,L52e3
 	word5	,"CONSTANT",$02,L52ea
 	word5	,"VARIABLE",$02,L52f2
@@ -3175,7 +3175,7 @@ D79c4:	word5	D7b54,"VECTOR",$02,L5351
 	word5	,"(LITERAL)",$00,$0308
 	word5	,"CEXECUTE",$02,L540b
 	word5	,"INTERPRET",$00,$9908
-	word5	,"CLEAN??",$02,L547c
+	word5	,"CLEANUP",$02,L547c
 	word5	,"((QUIT))",$00,$0508
 	word5	,"QUIT",$00,$0108
 	word5	,"700TAGS",$02,L551e
@@ -3183,12 +3183,12 @@ D79c4:	word5	D7b54,"VECTOR",$02,L5351
 	word5	,"ID.",$02,L56aa
 	word5	,"VLIST",$02,L56c8
 	word5	,"VOCABULARY",$02,L56ef
-	word5	,"DEFIN??????",$02,L5719
+	word5	,"DEFINITIONS",$02,L5719
 	word5	,"CHAIN",$02,L5720
 	word5	,"FORGET",$02,L5739
 	word5	,"(FORGET)",$02,L5749
 	word5	,"SHRNK",$02,L5935
-	word5	,"OTHER????",$02,L59ec
+	word5	,"OTHERWISE",$02,L59ec
 	word5	,"IFTRUE",$02,L59f9
 	word5	,"IFEND",$02,L59ff
 	word5	,"(LOAD)",$00,$a008
@@ -3197,7 +3197,7 @@ D79c4:	word5	D7b54,"VECTOR",$02,L5351
 	word5	,"DEVLOAD",$02,L5b30
 	word5	,"DEVLOAD\x22",$02,L5b47
 	word5	,"EDIT",$02,L5b4f
-	word5	,"SAVES???",$02,L5b6e
+	word5	,"SAVESNAP",$02,L5b6e
 D7b29:	wordi5	,"GET-TYPE",$02,L5bbc
 D7b34:	wordi5	D7b3f,"ENDIF",$00,$a108
 D7b3f:	wordi5	D7b6a,"THEN",$00,$a108
@@ -3207,7 +3207,7 @@ D7b5f:	wordi5	D7bbe,"ENDCASE",$02,L5c83
 D7b6a:	wordi5	D7b95,"BEGIN",$02,L5c87
 	wordi5	D7b49,"IF.L",$02,L5c8d
 	wordi5	,"WHILE.L",$02,L5c95
-D7b8a:	wordi5	,"ELSE.?",$02,L5c9b
+D7b8a:	wordi5	,"ELSE.L",$02,L5c9b
 D7b95:	wordi5	D7ba0,"UNTIL",$02,L5ca6
 D7ba0:	wordi5	D7bb6,"REPEAT",$02,L5cb9
 D7bab:	wordi5	D7b8a,"AGAIN",$02,L5cb9
@@ -3230,8 +3230,8 @@ D7c4d:	wordi5	D7b34,"ELSE",$02,L5d21
 D7c57:	wordi5	D7c5e,"\\",$02,L5d28
 D7c5e:	wordi5	D683c,"(",$02,L5d2e
 	wordi5	D7c37,"DOES>",$02,L5d34
-D7c70:	wordi5	,"ABORT?",$02,L5d41
-D7c7b:	wordi5	D7c70,"?ABOR??",$02,L5d48
+D7c70:	wordi5	,"ABORT\x22",$02,L5d41
+D7c7b:	wordi5	D7c70,"?ABORT\x22",$02,L5d48
 
 	fcb	$a2,$03,$81	; "O..H]..."
 	fcb	$a3,$02,$45,$47,$86,$7c,$82,$2e	; "..EG.|.."
