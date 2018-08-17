@@ -2,24 +2,11 @@
 
 	cpu	6502
 
-; counted string, first byte is count of characters that follow
-cstr	macro	str
-	fcb	end-start
-start:	fcb	str
-end:
-	endm
-
-; string with MSB of last character set
-mstr	macro	str
-	if	strlen(str)>1
-	fcb	substr(str, 0, strlen(str)-1)
-	endif
-	if	strlen(str)>0
-	fcb	charfromstr(str, strlen(str)-1)|$80
-	endif
-	endm
+	include	"hhc.inc"
+	include	"hhc_tags.inc"
 
 ; Inserts a tag by number into a SNAP word being defined.
+; XXX temporary, replace with "tag"
 ntag	macro	tnum
 	if	tnum<$100
 	fcb	tnum
@@ -28,31 +15,10 @@ ntag	macro	tnum
 	endif
 	endm
 
-frel	macro	target
-	fcb	target-*
-	endm
-
-ntagrf	macro	tagnum,target
-	ntag	tagnum
+; XXX temporary, replace with "tagrf"
+ntagrf	macro	tnum,target
+	ntag	tnum
 	frel	target
-	endm
-
-
-t_lit	equ	$11
-t_clit3	equ	$12
-t_clit2	equ	$13
-t_clit	equ	$14
-
-literal	macro	num
-	if	(num >= $0000) && (num <= $00ff)
-	fcb	t_clit,num
-	elseif	(num >= $0200) && (num <= $02ff)
-	fcb	t_clit2,num-$0200
-	elseif	(num >= $0300) && (num <= $03ff)
-	fcb	t_clit3,num-$0300
-	else
-	fcb	t_lit,num&$ff,num>>8
-	endif
 	endm
 
 wordt	macro	link,str,len,type,val,imm
@@ -106,9 +72,9 @@ D03a2	equ	$03a2
 D0306	equ	$0306
 D03a0	equ	$03a0
 D03a1	equ	$03a1
-T03a6	equ	$03a6
-T040e	equ	$040e
-T047e	equ	$047e
+x_find	equ	$03a6
+x_expnd	equ	$040e
+x_to	equ	$047e
 L0485	equ	$0485
 L048f	equ	$048f
 
@@ -133,175 +99,178 @@ cspeed:		fcb	$84	; shows in menu, and is a "slow ROM"
 
 romid:		cstr	"SnapFORTH"
 
+; tag table 8 (long tags $800..$8ff)
 tag_table_8:
-	       	fdb	x_tag_800
-		fdb	x_tag_801	; QUIT
-		fdb	x_tag_802	; (NUMBER)
-		fdb	x_tag_803	; (LITERAL)
-		fdb	x_tag_804
-		fdb	x_tag_805	; ((QUIT))
-		fdb	T03a6		; FIND
-		fdb	T040e		; EXPND
-		fdb	T047e		; TO		used to write SnapFORTH capsule variables
-		fdb	x_tag_809	; EXECTO
-		fdb	x_tag_80a	; UR@
+	tt_start    $800
+	
+	def_tag	tag_800
+	def_tag	quit		; QUIT
+	def_tag	p_number	; (NUMBER)
+	def_tag	p_literal	; (LITERAL)
+	def_tag	tag_804
+	def_tag	pp_quit		; ((QUIT))
+	def_tag	find		; FIND
+	def_tag	expnd		; EXPND
+	def_tag	to		; TO
+	def_tag	execto		; EXECTO
+	def_tag	ur_at		; UR@
 
 ; SnapFORTH capsule dictionary variables
 ; See SnapFORTH Referene Guide Volume II page G-4
-		fdb	x_tag_80b	; DP
-		fdb	x_tag_80c	; HDP
-		fdb	x_tag_80d	; HDP0
-		fdb	x_tag_80e	; CONTEXT
-		fdb	x_tag_80f	; CURRENT
-		fdb	x_tag_810	; TIB
-		fdb	x_tag_811	; TIBLEN
-		fdb	x_tag_812	; IN
-		fdb	x_tag_813	; LASTIN
-		fdb	x_tag_814	; STATE
-		fdb	x_tag_815	; CSP
-		fdb	x_tag_816	; V-LINK
-		fdb	x_tag_817	; L1
-		fdb	x_tag_818	; L2
-		fdb	x_tag_819	; L3
-		fdb	x_tag_81a	; L4
-		fdb	x_tag_81b	; O
-		fdb	x_tag_81c	; MAXSZ
-		fdb	x_tag_81d	; WIDTH
-		fdb	x_tag_81e
-		fdb	x_tag_81f
-		fdb	x_tag_820
-		fdb	x_tag_821
-		fdb	x_tag_822	; (NUM)
-		fdb	x_tag_823	; (LIT)
-		fdb	x_tag_824	; (QUIT)
-		fdb	x_tag_825	; FENCE
-		fdb	x_tag_826	; AREAPNT
-		fdb	x_tag_827	; CON-LINK
-		fdb	x_tag_828	; FWD
-		fdb	x_tag_829	; %HIGH
-		fdb	x_tag_82a
-		fdb	x_tag_82b
-		fdb	x_tag_82c
+	def_tag	dp		; DP
+	def_tag	hdp		; HDP
+	def_tag hdp0		; HDP0
+	def_tag	context		; CONTEXT
+	def_tag	current		; CURRENT
+	def_tag	tib		; TIB
+	def_tag	tiblen		; TIBLEN
+	def_tag in		; IN
+	def_tag	lastin		; LASTIN
+	def_tag	state		; STATE
+	def_tag	csp		; CSP
+	def_tag	v_link		; V-LINK
+	def_tag	l1		; L1
+	def_tag	l2		; L2
+	def_tag	l3		; L3
+	def_tag	l4		; L4
+	def_tag	o		; O
+	def_tag	maxsz		; MAXSZ
+	def_tag	width		; WIDTH
+	def_tag	tag_81e
+	def_tag	tag_81f
+	def_tag	tag_820
+	def_tag	tag_821
+	def_tag p_num		; (NUM)
+	def_tag	p_lit		; (LIT)
+	def_tag	p_quit		; (QUIT)
+	def_tag	fence		; FENCE
+	def_tag	areapnt		; AREAPNT
+	def_tag	con_link	; CON-LINK
+	def_tag	fwd		; FWD
+	def_tag	pct_high	; %HIGH
+	def_tag	tag_82a
+	def_tag	tag_82b
+	def_tag	tag_82c
 
-		fdb	x_tag_82d	; 'V
-		fdb	x_tag_82e
-		fdb	x_tag_82f	; H>T
-		fdb	x_tag_830	; T>H
-		fdb	x_tag_831	; %VAR
-		fdb	x_tag_832	; ((
-		fdb	x_tag_833	; +TO
-		fdb	x_tag_834	; FROM
-		fdb	x_tag_835	; ))
-		fdb	x_tag_836
-		fdb	x_tag_837	; U>
-		fdb	x_tag_838	; 0>
-		fdb	x_tag_839	; UMIN
-		fdb	x_tag_83a	; UMAX
-		fdb	x_tag_83b	; D.
-		fdb	x_tag_83c	; U.
-		fdb	x_tag_83d	; B.
-		fdb	x_tag_83e	; H.
-		fdb	x_tag_83f	; DECIMAL
-		fdb	x_tag_840	; G.
-		fdb	x_tag_841	; SEMIT
-		fdb	x_tag_842	; STYPE
-		fdb	x_tag_843	; SP!
-		fdb	x_tag_844	; ?S
-		fdb	x_tag_845	; .S
-		fdb	x_tag_846	; ?
-		fdb	x_tag_847	; C?
-		fdb	x_tag_848	; DUMP
-		fdb	x_tag_849	; HERE
-		fdb	x_tag_84a	; -WORD
-		fdb	x_tag_84b
-		fdb	x_tag_84c
-		fdb	x_tag_84d	; ?PAIRS
-		fdb	x_tag_84e	; !CSP
-		fdb	x_tag_84f	; ?CSP
-		fdb	x_tag_850	; ?COMP
-		fdb	x_tag_851	; ?EXEC
-		fdb	x_tag_852	; ALLOT
-		fdb	x_tag_853
-		fdb	x_tag_854	; ,F
-		fdb	x_tag_855
-		fdb	x_tag_856
-		fdb	x_tag_857
-		fdb	x_tag_858	; ,
-		fdb	x_tag_859	; C,
-		fdb	x_tag_85a
-		fdb	x_tag_85b
-		fdb	x_tag_85c
-		fdb	x_tag_85d	; INCH
-		fdb	x_tag_85e	; WORD
-		fdb	x_tag_85f	; -FIND
-		fdb	x_tag_860
-		fdb	x_tag_861
-		fdb	x_tag_862
-		fdb	x_tag_863	; 'X
-		fdb	x_tag_864	; ?DEF
-		fdb	x_tag_865
-		fdb	x_tag_866	; TAG
-		fdb	x_tag_867
-		fdb	x_tag_868
-		fdb	x_tag_869
-		fdb	x_tag_86a	; PFA
-		fdb	x_tag_86b	; LAST
-		fdb	x_tag_86c	; NFA
-		fdb	x_tag_86d	; LFA
-		fdb	x_tag_86e	; LATEST
-		fdb	x_tag_86f	; HEX
-		fdb	x_tag_870	; OCTAL
-		fdb	x_tag_871	; CONVERT
-		fdb	x_tag_872
-		fdb	x_tag_873	; NUMBER
-		fdb	x_tag_874	; DCONVERT
-		fdb	x_tag_875	; FCONVERT
-		fdb	x_tag_876	; S"
-		fdb	x_tag_877
-		fdb	x_tag_878	; CFA
-		fdb	x_tag_879
-		fdb	x_tag_87a	; TT.ORIGIN
-		fdb	x_tag_87b	; STAG#
-		fdb	x_tag_87c	; LTAG#
-		fdb	x_tag_87d	; EXT#
-		fdb	x_tag_87e	; #SHORTS
-		fdb	x_tag_87f	; #LONGS
-		fdb	x_tag_880
-		fdb	x_tag_881
-		fdb	x_tag_882	; CREATE <BUILDS
-		fdb	x_tag_883	; ]
-		fdb	x_tag_884	; [
-		fdb	x_tag_885	; (CREATE)
-		fdb	x_tag_886
-		fdb	x_tag_887
-		fdb	x_tag_888
-		fdb	x_tag_889
-		fdb	x_tag_88a
-		fdb	x_tag_88b
-		fdb	x_tag_88c	; SMUDGE
-		fdb	x_tag_88d
-		fdb	x_tag_88e	; ==
-		fdb	x_tag_88f	; CODE
-		fdb	x_tag_890	; CODEC
-		fdb	x_tag_891
-		fdb	x_tag_892
-		fdb	x_tag_893	; CREATEC <BUILDSC
-		fdb	x_tag_894
-		fdb	x_tag_895
-		fdb	x_tag_896
-		fdb	x_tag_897	; EXPCT
-		fdb	x_tag_898	; QUERY
-		fdb	x_tag_899	; INTERPRET
-		fdb	x_tag_89a
-		fdb	x_tag_89b
-		fdb	x_tag_89c
-		fdb	x_tag_89d
-		fdb	x_tag_89e
-		fdb	x_tag_89f
-		fdb	x_tag_8a0	; (LOAD)
-		fdb	x_tag_8a1	; ENDIF THEN
-		fdb	x_tag_8a2
-		fdb	x_tag_8a3
+	def_tag	tag_82d		; 'V
+	def_tag	tag_82e
+	def_tag	tag_82f		; H>T
+	def_tag	tag_830		; T>H
+	def_tag	tag_831		; %VAR
+	def_tag	tag_832		; ((
+	def_tag	tag_833		; +TO
+	def_tag	tag_834		; FROM
+	def_tag	tag_835		; ))
+	def_tag	tag_836
+	def_tag	tag_837		; U>
+	def_tag	tag_838		; 0>
+	def_tag	tag_839		; UMIN
+	def_tag	tag_83a		; UMAX
+	def_tag	tag_83b		; D.
+	def_tag	tag_83c		; U.
+	def_tag	tag_83d		; B.
+	def_tag	tag_83e		; H.
+	def_tag	tag_83f		; DECIMAL
+	def_tag	tag_840		; G.
+	def_tag	tag_841		; SEMIT
+	def_tag	tag_842		; STYPE
+	def_tag	tag_843		; SP!
+	def_tag	tag_844		; ?S
+	def_tag	tag_845		; .S
+	def_tag	tag_846		; ?
+	def_tag	tag_847		; C?
+	def_tag	tag_848		; DUMP
+	def_tag	tag_849		; HERE
+	def_tag	tag_84a		; -WORD
+	def_tag	tag_84b
+	def_tag	tag_84c
+	def_tag	tag_84d		; ?PAIRS
+	def_tag	tag_84e		; !CSP
+	def_tag	tag_84f		; ?CSP
+	def_tag	tag_850		; ?COMP
+	def_tag	tag_851		; ?EXEC
+	def_tag	tag_852		; ALLOT
+	def_tag	tag_853
+	def_tag	tag_854		; ,F
+	def_tag	tag_855
+	def_tag	tag_856
+	def_tag	tag_857
+	def_tag	tag_858		; ,
+	def_tag	tag_859		; C,
+	def_tag	tag_85a
+	def_tag	tag_85b
+	def_tag	tag_85c
+	def_tag	tag_85d		; INCH
+	def_tag	tag_85e		; WORD
+	def_tag	tag_85f		; -FIND
+	def_tag	tag_860
+	def_tag	tag_861
+	def_tag	tag_862
+	def_tag	tag_863		; 'X
+	def_tag	tag_864		; ?DEF
+	def_tag	tag_865
+	def_tag	tag_866		; TAG
+	def_tag	tag_867
+	def_tag	tag_868
+	def_tag	tag_869
+	def_tag	tag_86a		; PFA
+	def_tag	tag_86b		; LAST
+	def_tag	tag_86c		; NFA
+	def_tag	tag_86d		; LFA
+	def_tag	tag_86e		; LATEST
+	def_tag	tag_86f		; HEX
+	def_tag	tag_870		; OCTAL
+	def_tag	tag_871		; CONVERT
+	def_tag	tag_872
+	def_tag	tag_873		; NUMBER
+	def_tag	tag_874		; DCONVERT
+	def_tag	tag_875		; FCONVERT
+	def_tag	tag_876		; S"
+	def_tag	tag_877
+	def_tag	tag_878		; CFA
+	def_tag	tag_879
+	def_tag	tag_87a		; TT.ORIGIN
+	def_tag	tag_87b		; STAG#
+	def_tag	tag_87c		; LTAG#
+	def_tag	tag_87d		; EXT#
+	def_tag	tag_87e		; #SHORTS
+	def_tag	tag_87f		; #LONGS
+	def_tag	tag_880
+	def_tag	tag_881
+	def_tag	tag_882		; CREATE <BUILDS
+	def_tag	tag_883		; ]
+	def_tag	tag_884		; [
+	def_tag	tag_885		; (CREATE)
+	def_tag	tag_886
+	def_tag	tag_887
+	def_tag	tag_888
+	def_tag	tag_889
+	def_tag	tag_88a
+	def_tag	tag_88b
+	def_tag	tag_88c		; SMUDGE
+	def_tag	tag_88d
+	def_tag	tag_88e		; ==
+	def_tag	tag_88f		; CODE
+	def_tag	tag_890		; CODEC
+	def_tag	tag_891
+	def_tag	tag_892
+	def_tag	tag_893		; CREATEC <BUILDSC
+	def_tag	tag_894
+	def_tag	tag_895
+	def_tag	tag_896
+	def_tag	tag_897		; EXPCT
+	def_tag	tag_898		; QUERY
+	def_tag	tag_899		; INTERPRET
+	def_tag	tag_89a
+	def_tag	tag_89b
+	def_tag	tag_89c
+	def_tag	tag_89d
+	def_tag	tag_89e
+	def_tag	tag_89f
+	def_tag	tag_8a0		; (LOAD)
+	def_tag	tag_8a1		; ENDIF THEN
+	def_tag	tag_8a2
+	def_tag	tag_8a3
 
 ; $417e
 	fcb	$a9,$02
@@ -344,110 +313,110 @@ tag_table_8:
 	fcb	$8d,$04
 
 ; EXECTO
-x_tag_809:
+x_execto:
 	LDA	#$01
 	JSR	Sffd3
 	JMP	L048f
 
 ; UR@
-x_tag_80a:
+x_ur_at:
 	fcb	$00
 	literal	D03a0		; D03a0
 	ntag	$15		; @
 	fcb	$00
 
 ; DP (SnapFORTH capsule dictionary variable)
-x_tag_80b:
+x_dp:
 	LDY	#$04
 	BNE	L42f1		; always taken
 
 ; HDP (SnapFORTH capsule dictionary variable)
-x_tag_80c:
+x_hdp:
 	LDY	#$06
 	BNE	L42f1		; always taken
 
 ; HDP0 (SnapFORTH capsule dictionary variable)
-x_tag_80d:
+x_hdp0:
 	LDY	#$08
 	BNE	L42f1		; always taken
 
 ; CONTEXT (SnapFORTH capsule dictionary variable)
-x_tag_80e:
+x_context:
 	LDY	#$0a
 	BNE	L42f1		; always taken
 
 ; CURRENT (SnapFORTH capsule dictionary variable)
-x_tag_80f:
+x_current:
 	LDY	#$0c
 	BNE	L42f1		; always taken
 
 ; TIB (SnapFORTH capsule dictionary variable)
-x_tag_810:
+x_tib:
 	LDY	#$0e
 	BNE	L42f1		; always taken
 
 ; TIBLEN (SnapFORTH capsule dictionary variable)
-x_tag_811:
+x_tiblen:
 	LDY	#$10
 	BNE	L42f1		; always taken
 
 ; IN (SnapFORTH capsule dictionary variable)
-x_tag_812:
+x_in:
 	LDY	#$12
 	BNE	L42f1		; always taken
 
 ; LASTIN (SnapFORTH capsule dictionary variable)
-x_tag_813:
+x_lastin:
 	LDY	#$14
 	BNE	L42f1		; always taken
 
 ; STATE (SnapFORTH capsule dictionary variable)
-x_tag_814:
+x_state:
 	LDY	#$16
 	BNE	L42f1		; always taken
 
 ; CSP (SnapFORTH capsule dictionary variable)
-x_tag_815:
+x_csp:
 	LDY	#$18
 	BNE	L42f1		; always taken
 
-; VLINK (SnapFORTH capsule dictionary variable)
-x_tag_816:
+; V-LINK (SnapFORTH capsule dictionary variable)
+x_v_link:
 	LDY	#$1a
 	BNE	L42f1		; always taken
 
 ; L1 (SnapFORTH capsule dictionary variable)
-x_tag_817:
+x_l1:
 	LDY	#$1c
 	BNE	L42f1		; always taken
 
 ; L2 (SnapFORTH capsule dictionary variable)
-x_tag_818:
+x_l2:
 	LDY	#$1e
 	BNE	L42f1		; always taken
 
 ; L3 (SnapFORTH capsule dictionary variable)
-x_tag_819:
+x_l3:
 	LDY	#$20
 	BNE	L42f1		; always taken
 
 ; L4 (SnapFORTH capsule dictionary variable)
-x_tag_81a:
+x_l4:
 	LDY	#$22
 	BNE	L42f1		; always taken
 
 ; O (SnapFORTH capsule dictionary variable)
-x_tag_81b:
+x_o:
 	LDY	#$24
 L42f1:	JMP	L0485
 
 ; MAXSZ (SnapFORTH capsule dictionary variable)
-x_tag_81c:
+x_maxsz:
 	LDY	#$26
 	BNE	L42f1		; always taken
 
 ; WIDTH (SnapFORTH capsule dictionary variable)
-x_tag_81d:
+x_width:
 	LDY	#$28
 	BNE	L42f1		; always taken
 
@@ -472,42 +441,42 @@ x_tag_821:
 	BNE	L42f1		; always taken
 
 ; (NUM) (SnapFORTH capsule dictionary variable)
-x_tag_822:
+x_p_num:
 	LDY	#$32
 	BNE	L42f1		; always taken
 
 ; (LIT) (SnapFORTH capsule dictionary variable)
-x_tag_823:
+x_p_lit:
 	LDY	#$34
 	BNE	L42f1		; always taken
 
 ; (QUIT) (SnapFORTH capsule dictionary variable)
-x_tag_824:
+x_p_quit:
 	LDY	#$36
 	BNE	L42f1		; always taken
 
-; (FENCE) (SnapFORTH capsule dictionary variable)
-x_tag_825:
+; FENCE (SnapFORTH capsule dictionary variable)
+x_fence:
 	LDY	#$38
 	BNE	L42f1		; always taken
 
-; (AREAPNT) (SnapFORTH capsule dictionary variable)
-x_tag_826:
+; AREAPNT (SnapFORTH capsule dictionary variable)
+x_areapnt:
 	LDY	#$3a
 	BNE	L42f1		; always taken
 
-; (CON-LINK) (SnapFORTH capsule dictionary variable)
-x_tag_827:
+; CON-LINK (SnapFORTH capsule dictionary variable)
+x_con_link:
 	LDY	#$3c
 	BNE	L42f1		; always taken
 
-; (FWD) (SnapFORTH capsule dictionary variable)
-x_tag_828:
+; FWD (SnapFORTH capsule dictionary variable)
+x_fwd:
 	LDY	#$3e
 	BNE	L42f1		; always taken
 
-; (%HIGH) (SnapFORTH capsule dictionary variable)
-x_tag_829:
+; %HIGH (SnapFORTH capsule dictionary variable)
+x_pct_high:
 	LDY	#$40
 	BNE	L42f1		; always taken
 
@@ -1249,7 +1218,7 @@ x_tag_872:
 	fcb	$24                     	; "$"
 
 ; (NUMBER)
-x_tag_802:
+x_p_number:
 	fcb	$00
 	fcb	$14,$25,$17,$14,$0a,$48,$4c,$10	; ".%...HL."
 	fcb	$1b,$23,$0c,$f2,$4c,$4e,$06,$24	; ".#..LN.$"
@@ -1804,7 +1773,7 @@ x_tag_898:
 	fcb	$08,$08,$12               	; "..."
 
 ; (LITERAL)
-x_tag_803:
+x_p_literal:
 	fcb	$00
 	fcb	$33,$58,$04,$08,$69,$00,$32,$58	; "3X..i.2X"
 	fcb	$05,$0c,$12,$4c,$00,$31,$58,$05	; "...L.1X."
@@ -1847,14 +1816,14 @@ L547c:
 	fcb	$3d,$0c,$49,$57            	; "=.IW"
 
 ; ((QUIT))
-x_tag_805:
+x_pp_quit:
 	fcb	$00
 	fcb	$0c,$7c,$54,$7d,$08,$34,$08,$14	; ".|T}.4.."
 	fcb	$4e,$05,$7a,$02,$6f,$6b,$7e,$08	; "N.z.ok~."
 	fcb	$98,$08,$99,$53,$10         	; "...S."
 
 ; QUIT
-x_tag_801:
+x_quit:
 	fcb	$00
 	fcb	$12,$9e,$17,$08,$04,$12,$9c,$15	; "........"
 	fcb	$30,$3d,$79,$3d,$30,$3d,$12,$a0	; "0=y=0=.."
@@ -3013,41 +2982,41 @@ D7324:	word5	D7421,"F.",$00,$b001
 
 D7421:	word5	D748b,"BL",$01,$0020
 
-	word5	$7416,"FIND",$00,$0608
-D7433:	word5	,"EXPND",$00,$0708
-D743e:	word5	D75a3,"TO",$00,$0808	; used to write SnapFORTH capsule variables
-	word5	D7433,"EXECTO",$00,$0908
-	word5	,"UR@",$00,$0a08
+	word5	$7416,"FIND",$00,ts_find
+D7433:	word5	,"EXPND",$00,ts_expnd
+D743e:	word5	D75a3,"TO",$00,ts_to	; used to write SnapFORTH capsule variables
+	word5	D7433,"EXECTO",$00,ts_execto
+	word5	,"UR@",$00,ts_ur_at
 
 ; SnapFORTH capsule dictionary variables
 ; See SnapFORTH Referene Guide Volume II page G-4
-	word5	,"DP",$00,$0b08
-	word5	,"HDP",$00,$0c08
-	word5	,"HDP0",$00,$0d08
-	word5	,"CONTEXT",$00,$0e08
-D7480:	word5	,"CURRENT",$00,$0f08
-D748b:	word5	D749f,"TIB",$00,$1008
-D7494:	word5	D7480,"TIBLEN",$00,$1108
-D749f	word5	D76d7,"IN",$00,$1208
-	word5	D7494,"LASTIN",$00,$1308
-	word5	,"STATE",$00,$1408
-	word5	,"CSP",$00,$1508
-	word5	,"V-LINK",$00,$1608
-	word5	,"L1",$00,$1708
-	word5	,"L2",$00,$1808
-	word5	,"L3",$00,$1908
-	word5	,"L4",$00,$1a08
-	word5	,"O",$00,$1b08
-	word5	,"MAXSZ",$00,$1c08
-	word5	,"WIDTH",$00,$1d08
-	word5	,"(NUM)",$00,$2208
-	word5	,"(LIT)",$00,$2308
-	word5	,"(QUIT)",$00,$2408
-	word5	,"FENCE",$00,$2508
-	word5	,"AREAPNT",$00,$2608	
-	word5	,"CON-LINK",$00,$2708
-	word5	,"FWD",$00,$2808
-	word5	,"%HIGH",$00,$2908
+	word5	,"DP",$00,ts_dp
+	word5	,"HDP",$00,ts_hdp
+	word5	,"HDP0",$00,ts_hdp0
+	word5	,"CONTEXT",$00,ts_context
+D7480:	word5	,"CURRENT",$00,ts_current
+D748b:	word5	D749f,"TIB",$00,ts_tib
+D7494:	word5	D7480,"TIBLEN",$00,ts_tiblen
+D749f	word5	D76d7,"IN",$00,ts_in
+	word5	D7494,"LASTIN",$00,ts_lastin
+	word5	,"STATE",$00,ts_state
+	word5	,"CSP",$00,ts_csp
+	word5	,"V-LINK",$00,ts_v_link
+	word5	,"L1",$00,ts_l1
+	word5	,"L2",$00,ts_l2
+	word5	,"L3",$00,ts_l3
+	word5	,"L4",$00,ts_l4
+	word5	,"O",$00,ts_o
+	word5	,"MAXSZ",$00,ts_maxsz
+	word5	,"WIDTH",$00,ts_width
+	word5	,"(NUM)",$00,ts_p_num
+	word5	,"(LIT)",$00,ts_p_lit
+	word5	,"(QUIT)",$00,ts_p_quit
+	word5	,"FENCE",$00,ts_fence
+	word5	,"AREAPNT",$00,ts_areapnt
+	word5	,"CON-LINK",$00,ts_con_link
+	word5	,"FWD",$00,ts_fwd
+	word5	,"%HIGH",$00,ts_pct_high
 
 	word5	,"WHO",$02,L4471
 	word5	,"SET",$02,L4483
@@ -3111,7 +3080,7 @@ D7783:	word5	,"LAST",$00,$6b08
 D778d:	word5	D7796,"HEX",$00,$6f08
 D7796:	word5	D77b7,"DECIMAL",$00,$3f08
 	word5	D7783,"OCTAL",$00,$7008
-D77ac:	word5	,"(NUMBER)",$00,$0208
+D77ac:	word5	,"(NUMBER)",$00,ts_p_number
 D77b7:	word5	D78ec,"NUMBER",$00,$7308
 	word5	D77ac,"CONVERT",$00,$7108
 	word5	,"DCONVERT",$00,$7408
@@ -3172,12 +3141,12 @@ D79c4:	word5	D7b54,"VECTOR",$02,L5351
 	word5	,"TABLE",$02,L5384
 	word5	,"EXPCT",$00,$9708
 	word5	,"QUERY",$00,$9808
-	word5	,"(LITERAL)",$00,$0308
+	word5	,"(LITERAL)",$00,ts_p_literal
 	word5	,"CEXECUTE",$02,L540b
 	word5	,"INTERPRET",$00,$9908
 	word5	,"CLEANUP",$02,L547c
-	word5	,"((QUIT))",$00,$0508
-	word5	,"QUIT",$00,$0108
+	word5	,"((QUIT))",$00,ts_pp_quit
+	word5	,"QUIT",$00,ts_quit
 	word5	,"700TAGS",$02,L551e
 	word5	,"COLD",$02,L569e
 	word5	,"ID.",$02,L56aa

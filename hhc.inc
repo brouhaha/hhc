@@ -1,3 +1,7 @@
+		ifndef	as_hhc_main
+as_hhc_main	equ	0
+		endif
+
 ; Starts a tag table, assigning tag numbers starting from the argument value.
 tt_start	macro	tagnum
 _ttnum	set	tagnum
@@ -9,8 +13,11 @@ _ttbase	set	*
 ; label x_foo.
 def_tag	macro	name
 t_name	set	_ttnum
-_ttnum	set	_ttnum+1
+ts_name	set	(((_ttnum & $ff) << 8) | (_ttnum >> 8))
+	if	as_hhc_main || ((_ttnum >= $0c0) && (_ttnum <= $0ff)) || (_ttnum >= $200)
 	fdb	x_name
+	endif
+_ttnum	set	_ttnum+1
 	endm
 
 ; Inserts a tag into a SNAP word being defined.
@@ -52,9 +59,18 @@ tagrr	macro	tagnum,target
 	rrel	target
 	endm
 
+; string with MSB of last character set
+mstr	macro	str
+	if	strlen(str)>1
+	fcb	substr(str, 0, strlen(str)-1)
+	endif
+	if	strlen(str)>0
+	fcb	charfromstr(str, strlen(str)-1)|$80
+	endif
+	endm
+
 cstr	macro	str
 	fcb	end-start
 start:	fcb	str
 end:
 	endm
-
