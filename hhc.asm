@@ -36,17 +36,42 @@ literal	macro	num
 	endif
 	endm
 
+frel	macro	target
+	fcb	target-*
+	endm
+
+tagrf	macro	tagnum,target
+	tag	tagnum
+	frel	target
+	endm
+
+rrel	macro	target
+	fcb	*-target
+	endm
+
+tagrr	macro	tagnum,target
+	tag	tagnum
+	rrel	target
+	endm
+
+cstr	macro	str
+	fcb	end-start
+start:	fcb	str
+end:
+	endm
+
+
 
 	org	$00
 
 z00	rmb	1
 z01	rmb	1
 z02	rmb	1
-z03	rmb	1
+z03	rmb	1	; chvect1 - ptr to standard LCD char xlat table
 z04	rmb	1
-z05	rmb	1
+z05	rmb	1	; chvect2 - ptr to alternate LCD char xlat table
 z06	rmb	1
-z07	rmb	1
+z07	rmb	1	; acvect - ptr to LCD accent translation table
 z08	rmb	1
 next	rmb	3
 z0c	rmb	3
@@ -58,7 +83,7 @@ z18	rmb	1
 jirq	rmb	3	; jmp to IRQ handler
 z1c	rmb	3	; jmp to ?
 z1f	rmb	3	; jmp to ?
-z22	rmb	2
+z22	rmb	2	; ^cursor - pointer to alternate cursor pattern
 z24	rmb	1
 	rmb	1
 v_key	rmb	2	; 'KEY vector
@@ -66,7 +91,7 @@ v_emit	rmb	2	; 'EMIT vector
 v_abort	rmb	2	; 'ABORT vector
 z2c	rmb	2
 jnmi	rmb	3	; jmp to NMI handler
-z31	rmb	1
+latchs	rmb	1	; shadow of the write-only hardware latch byte
 z32	rmb	1
 z33	rmb	1
 z34	rmb	1
@@ -81,9 +106,10 @@ z3c	rmb	1
 z3d	rmb	1
 z3e	rmb	1
 z3f	rmb	1
-z40	rmb	1
+z40	rmb	1	; CFLSH
 z41	rmb	1
-z42	rmb	3	; jmp to ?
+
+z42	rmb	3	; N (32-byte temp area), also jmp to ?
 z45	rmb	1
 z46	rmb	1
 z47	rmb	1
@@ -105,18 +131,18 @@ z5e	rmb	1
 z5f	rmb	1
 z60	rmb	1
 z61	rmb	1
-z62	rmb	1
+xsave	rmb	1
 z63	rmb	1
 z64	rmb	1
 z65	rmb	1
 z66	rmb	1
-z67	rmb	1
+z67	rmb	1	; BUFPOSN
 	rmb	1
 	rmb	1
 z6a	rmb	1
 z6b	rmb	1
 z6c	rmb	1
-z6d	rmb	1
+z6d	rmb	1	; CHARBUF
 z6e	rmb	1
 z6f	rmb	1
 z70	rmb	1
@@ -124,6 +150,8 @@ z71	rmb	1
 z72	rmb	1
 z73	rmb	1
 z74	rmb	1
+
+; $75..$fe are the "parameter stack"
 
 	org	$fe
 
@@ -146,7 +174,7 @@ d0204	equ	$0204
 d0205	equ	$0205
 d0206	equ	$0206
 d0207	equ	$0207
-d0208	equ	$0208
+funct	equ	$0208
 d0209	equ	$0209
 d020a	equ	$020a
 d020b	equ	$020b
@@ -154,20 +182,20 @@ d020c	equ	$020c
 d020d	equ	$020d
 vtime	equ	$020e
 d0213	equ	$0213
-d0216	equ	$0216
-d0217	equ	$0217
+d0215	equ	$0215	; (FREEZE)
+d0216	equ	$0216	; (ROTMODE)
+d0217	equ	$0217	; SPEED
 d0218	equ	$0218
 d0219	equ	$0219
-d021b	equ	$021b
-d021c	equ	$021c
-d021d	equ	$021d
-d021e	equ	$021e
-d021f	equ	$021f
-d0220	equ	$0220
-d0235	equ	$0235
-d0236	equ	$0236
-d0250	equ	$0250
-d0251	equ	$0251
+
+	org	$021b
+
+tvect0	rmb	3*9	; tag table pointers, 2 byte addr, 1 byte bank
+			; bank has bit 7 set if in capsule ROM
+
+d0236	rmb	27
+d0251	rmb	27
+
 d026c	equ	$026c
 d0273	equ	$0273
 d0274	equ	$0274
@@ -189,6 +217,8 @@ d02c0	equ	$02c0
 devtbl	equ	$02c1
 d02d1	equ	$02d1
 d02d7	equ	$02d7
+d02dd	equ	$02dd
+d02df	equ	$02df
 d02e3	equ	$02e3
 d02f2	equ	$02f2
 d02f5	equ	$02f5
@@ -201,28 +231,45 @@ d037b	equ	$037b
 d037c	equ	$037c
 
 ; 2000-3fff: device control ROMs
-d2000	equ	$2000
+d2000	equ	$2000	; CTROM
 d2001	equ	$2001
-d2023	equ	$2023
+d2023	equ	$2023	; CTRFLAGS
+d2024	equ	$2024	; CTRFLAG2
+d2025	equ	$2025	; CTVECT
+d2027	equ	$2027	; CTEXT
+ctrid	equ	$2028	; CTRID
 
 ; 4000-7fff: ROM capsules, and memory-mapped I/O
 romaddr	equ	$4000
+romvect	equ	$4028
+romext	equ	$402a
 cspeed	equ	$402b
+romid	equ	$402c
 
-d47fc	equ	$47fc
+d47fc	equ	$47fc	; I/O
 d47fe	equ	$47fe
 d47ff	equ	$47ff
 
-d5800	equ	$5800
+; 5800-58ff: memory-mapped I/O
+d5800	equ	$5800	; KB, DSPLY
 d5802	equ	$5802
 d5820	equ	$5820
 d589f	equ	$589f
-d58fa	equ	$58fa
-d58fb	equ	$58fb
-d58fc	equ	$58fc
-d58fd	equ	$58fd
-d58fe	equ	$58fe
-d58ff	equ	$58ff
+d58fa	equ	$58fa	; LOBAT
+d58fb	equ	$58fb	; TLO
+d58fc	equ	$58fc	; TMID
+d58fd	equ	$58fd	; THI
+latch	equ	$58fe
+			; bit 7 - 1 for LCD control,   0 for keyboard control
+			; bit 6 = 1 for CPU on,        0 for CPU off
+			; bit 5 = beeper (used for SQUEAK)
+			; bit 4 = 1 for slow ROM, I/O, 0 for normal
+			; bit 3 = 1 for LCD on,        0 for LCD off
+			; bit 2 = 1 for capsule ROM,   0 for memory-mapped I/O
+
+			; bits 1..0 = 0, 1, 2 for capsule ROM, 3 for external
+
+d58ff	equ	$58ff	; YOFF
 
 ; 8000-bfff: extrinsic RAM (RAM expanders)
 d8000	equ	$8000
@@ -403,8 +450,8 @@ t_0_equal	equ	t_not
 	def_tag	set_rom
 	def_tag	num_decb	; #DECB
 	def_tag	xor		; XOR
-	def_tag	tag_a7
-	def_tag	tag_a8
+	def_tag	tag_a7		; disable interrupts, saves status in z72
+	def_tag	tag_a8		; restore status from z72
 	def_tag	bounds		; BOUNDS
 	def_tag	2swap		; 2SWAP
 	def_tag	u_times		; U*
@@ -483,7 +530,7 @@ t_0_equal	equ	t_not
 	def_tag	bigmove		; BIGMOVE
 	def_tag	fill		; FILL
 	def_tag	erase		; ERASE
-	def_tag	blank		; BLANK
+	def_tag	blanks		; BLANKS
 	def_tag	jump_tab	; <JUMP-TAB>
 	def_tag	get_gmt		; GET.GMT
 	def_tag	attachx		; ATTACHX
@@ -624,7 +671,7 @@ t_0_equal	equ	t_not
 	def_tag	tag_1bd
 	def_tag	tag_1be
 	def_tag	tag_1bf
-	def_tag	intap		; INTAP
+	def_tag	intaps		; INTAPS
 	def_tag	tag_1c1
 	def_tag	tag_1c2
 	def_tag	tag_1c3
@@ -684,44 +731,44 @@ Sc34f:	lda	#$80
 
 	lda	#$10
 
-Sc35f:	ora	z31
+Sc35f:	ora	latchs
 
-Sc361:	ora	#$08
+dolatch:	ora	#$08
 	bit	z33
 	bmi	Lc369
 	and	#$f7
-Lc369:	sta	z31
-	sta	d58fe
+Lc369:	sta	latchs
+	sta	latch
 	rts
 
 Sc36f:	pha
-	lda	z31
+	lda	latchs
 	sta	d02bf
 	pla
 
 Sc376:	and	#$f8
 	ora	#$10
-	jmp	Sc361
+	jmp	dolatch
 
 Sc37d:	lda	d02bf
-	jmp	Sc361
+	jmp	dolatch
 
-Sc383:	lda	z31
+Sc383:	lda	latchs
 	sta	d02bf
 	jmp	Sc376
 
-Sc38b:	lda	z31
+Sc38b:	lda	latchs
 	jmp	Sc376
 
-Sc390:	and	z31
-	jmp	Sc361
+Sc390:	and	latchs
+	jmp	dolatch
 
-Lc395:	php
+getmem:	php
 	sei
 	clc
 	adc	z32
 	bcs	Lc3ad
-	cmp	z62
+	cmp	xsave
 	bcs	Lc3ad
 	stx	z1c+1
 	ldx	z32
@@ -737,7 +784,7 @@ Lc3ad:	plp
 	rts
 
 Sc3b1:	tay
-	lda	z31
+	lda	latchs
 	ora	#$80
 	jsr	Sc36f
 	tya
@@ -920,11 +967,11 @@ Lc51e:	lda	De8de,x
 	sta	z00,x
 	dex
 	bpl	Lc51e
-	sta	d0220
+	sta	tvect0+5
 	lda	#$80
-	sta	d021e
+	sta	tvect0+3
 	lda	#$c1
-	sta	d021f
+	sta	tvect0+4
 	rts
 
 Sc534:	sei
@@ -938,20 +985,22 @@ Lc53a:	sta	z00,x
 Lc541:	sta	d0200,x
 	dex
 	bpl	Lc541
+
 	ldx	#$1b
 Lc549:	lda	#$20
-	sta	d0235,x
+	sta	d0236-1,x
 	lda	#$00
-	sta	d0250,x
+	sta	d0251-1,x
 	dex
 	bne	Lc549
+
 	lda	#$c0
 	sta	z65
 	lda	#$80
 	ora	d02e3
 	sta	d02e3
 	lda	#$50
-	jsr	Sc361
+	jsr	dolatch
 	lda	#$10
 	sta	z6d
 	jsr	Sc318
@@ -1093,9 +1142,9 @@ Sc669:	ldy	d020a
 Lc676:	lda	z64
 	ora	#$80
 	sta	z64
-	lda	d0208
+	lda	funct
 	beq	Lc68e
-	dec	d0208
+	dec	funct
 	ldy	d0209
 	lda	d0283,y
 	inc	d0209
@@ -1124,7 +1173,7 @@ Lc69e:	sty	d0207
 	asl
 	tay
 	lda	d0282,y
-	sta	d0208
+	sta	funct
 	sty	d0209
 	jmp	Sc669
 
@@ -1173,7 +1222,7 @@ Sc6e3:	php
 Lc70d:	plp
 	rts
 
-Sc70f:	php
+sleep:	php
 	sei
 	pha
 	lda	d0204
@@ -1186,7 +1235,7 @@ Lc71a:	txa
 	pha
 	tya
 	pha
-	lda	z31
+	lda	latchs
 	pha
 	lda	z3d
 	pha
@@ -1220,7 +1269,7 @@ RESET:	cld
 	bne	Lc790
 	ldx	zff
 	txs
-	lda	z31
+	lda	latchs
 	ora	#$40
 	jsr	Sc376
 	lda	z64
@@ -1249,7 +1298,7 @@ Lc790:	lda	d58fd
 	sta	d58fd
 	lda	#$00
 	sta	d58ff
-	sta	d58fe
+	sta	latch
 	jmp	reset
 
 Lc7a4:	sei
@@ -1328,7 +1377,7 @@ Lc836:	lda	#$7f
 	sta	d02b3,y
 	lda	z01,x
 	sta	d02b4,y
-	stx	z62
+	stx	xsave
 	php
 	sei
 	jsr	Sc383
@@ -1563,8 +1612,8 @@ Lca08:	lda	z65
 	ora	#$40
 	sta	z65
 	lda	#$20
-	eor	z31
-	jsr	Sc361
+	eor	latchs
+	jsr	dolatch
 	sty	d0218
 	cpy	#$00
 	bne	Lca1f
@@ -1698,7 +1747,7 @@ x_turn_off:
 	plp
 	pla
 	tax
-	jsr	Sc70f
+	jsr	sleep
 	jmp	next
 
 Scb0e:	php
@@ -1719,7 +1768,7 @@ Scb0e:	php
 	stx	z3d
 Lcb2c:	plp
 	lda	d2001
-	cmp	#$43
+	cmp	#'C'	; first char of "COPYRIGHT"
 	rts
 
 Scb33:	jmp	(v_abort)
@@ -1738,7 +1787,7 @@ Lcb41:	cld
 	pha
 	tya
 	pha
-	lda	z31
+	lda	latchs
 	pha
 	lda	z3d
 	pha
@@ -1762,7 +1811,7 @@ Lcb54:	lda	(z35),y
 	cpx	z3d
 	bne	Lcb78
 	lda	d2001
-	cmp	#$43
+	cmp	#'C'	; first char of "COPYRIGHT"
 	beq	Lcb81
 Lcb78:	txa
 	jsr	Scb0e
@@ -1787,7 +1836,7 @@ Lcb9b:	pla
 	beq	Lcba3
 	jsr	Scb0e
 Lcba3:	pla
-	jsr	Sc361
+	jsr	dolatch
 	pla
 	tay
 	pla
@@ -1811,7 +1860,7 @@ Lcbc0:	pla
 	beq	Lcb9b
 	jmp	Sc601
 
-Scbd2:	php
+postecb:	php
 	sei
 	iny
 	iny
@@ -1901,19 +1950,18 @@ Lcc40:	cmp	#$80
 
 Lcc49:	sbc	#$80		; handle $c0..$ff - short tags not in mainframe
 	clc
-Lcc4c:	adc	d021b,y
+Lcc4c:	adc	tvect0,y
 	sta	z0c+1
 	lda	#$00
-Lcc53:	adc	d021c,y
+Lcc53:	adc	tvect0+1,y
 	sta	z0c+2
 
-	lda	d021d,y
-	beq	Lcc68
-	cmp	z17
-	beq	Lcc68
+	lda	tvect0+2,y	; check needed bank
+	beq	Lcc68		; if 0, always present
+	cmp	z17		; otherwise see if the bank is mapped
+	beq	Lcc68		;   yes
 
-	jsr	Scc02
-
+	jsr	Scc02		; no, change bank
 	lda	#next2&$ff	; make next point to next2
 	sta	next+1
 
@@ -1941,7 +1989,7 @@ Lcc86:	ldy	#$00
 	inc	D020d
 	txa
 	pha
-	lda	z31
+	lda	latchs
 	pha
 	lda	Z3d
 	pha
@@ -1978,14 +2026,14 @@ Lccd1:	jsr	Sc38b
 	pla
 	jsr	Scb0e
 	pla
-	jsr	Sc361
+	jsr	dolatch
 	pla
 	tax
 	dec	D020d
 	jmp	next1		; why doesn't this jump to next (zero page)?
 
 Lcce4:	plp
-	stx	z62
+	stx	xsave
 	pla
 	tay
 	pla
@@ -2009,10 +2057,10 @@ Lccf0:	lda	next+1
 	stx	z15+1
 	lda	z3e
 	sta	z17
-Lcd08:	ldx	z62
+Lcd08:	ldx	xsave
 	jmp	next
 
-Scd0d:	pla
+dodoes:	pla
 	tay
 	pla
 	sta	z42
@@ -2024,7 +2072,7 @@ Scd0d:	pla
 	pla
 	adc	#$00
 	sta	z01,x
-	stx	z62
+	stx	xsave
 	ldx	z42
 	iny
 	bne	Lccf0
@@ -2062,7 +2110,7 @@ Lcd3b:	pha
 	jmp	Lcc4c
 
 Lcd49:	clc
-	adc	d021b,y
+	adc	tvect0,y
 	sta	z0c+1
 	lda	#$01
 	jmp	Lcc53
@@ -2204,10 +2252,10 @@ Lce31:	lda	z42+1
 	bcc	Lce6d
 	cmp	#$fd
 	bcc	Lce4a
-	lda	z31
+	lda	latchs
 	ora	z42+1
 	ora	#$14
-	jsr	Sc361
+	jsr	dolatch
 	jmp	Lce56
 
 Lce4a:	adc	#$fb
@@ -2236,13 +2284,13 @@ x_set_rom:
 	jmp	next
 
 x_set_ctrl:
-	stx	z62	; SET.CTRL
+	stx	xsave	; SET.CTRL
 	jsr	Sc383
 	lda	z00,x
 	jsr	Scb0e
 	php
 	jsr	Sc37d
-	ldx	z62
+	ldx	xsave
 	plp
 	jmp	Lcfd3
 
@@ -2258,7 +2306,7 @@ x_flit:
 	tax
 	cpx	z32
 	bcc	Lceb5
-	stx	z62
+	stx	xsave
 	lda	#$08
 	sta	z42
 Lcea6:	jsr	get_next_tag_byte
@@ -2266,7 +2314,7 @@ Lcea6:	jsr	get_next_tag_byte
 	inx
 	dec	z42
 	bne	Lcea6
-	ldx	z62
+	ldx	xsave
 	jmp	next
 
 Lceb5:	jmp	Lcd61
@@ -2343,10 +2391,10 @@ x_over:
 	lda	z03,x
 	jmp	Lcd64
 
-Scf1b:	stx	z62
+Scf1b:	stx	xsave
 	lda	z00,x
 	asl
-	adc	z62
+	adc	xsave
 	tax
 	lda	z00,x
 	rts
@@ -2355,7 +2403,7 @@ x_pick:
 	jsr	Scf1b	; PICK
 	pha
 	lda	z01,x
-	ldx	z62
+	ldx	xsave
 	jmp	Lcd6a
 
 x_plus_c_bang:
@@ -2373,7 +2421,7 @@ x_set_sp:
 	tax
 	jmp	next
 
-Lcf44:	ldx	z62
+Lcf44:	ldx	xsave
 	jmp	x_drop
 
 x_rot:
@@ -2384,7 +2432,7 @@ x_rot:
 
 x_roll:
 	jsr	Scf1b	; ROLL
-	cpx	z62
+	cpx	xsave
 	bmi	Lcf44
 	beq	Lcf44
 	pha
@@ -2392,7 +2440,7 @@ x_roll:
 Lcf5b:	ldy	zff,x
 	sty	z01,x
 	dex
-	cpx	z62
+	cpx	xsave
 	bne	Lcf5b
 	jmp	Lcd8c
 
@@ -2448,31 +2496,31 @@ x_rp_bang:
 	jmp	next
 
 x_r:
-	stx	z62	; R
+	stx	xsave	; R
 	tsx
 	lda	d0101,x
 	pha
 	lda	d0102,x
-	ldx	z62
+	ldx	xsave
 	jmp	Lcd64
 
 x_rp_at:
-	stx	z62	; RP@
+	stx	xsave	; RP@
 	tsx
 	inx
 	txa
 	pha
 	lda	#$01
-	ldx	z62
+	ldx	xsave
 	jmp	Lcd64
 
 x_set_rp:
-	stx	z62	; SET.RP
+	stx	xsave	; SET.RP
 	lda	z00,x
 	tax
 	dex
 	txs
-	ldx	z62
+	ldx	xsave
 	jmp	x_drop
 
 x_not:
@@ -2503,30 +2551,40 @@ x_1:	iny		; 1
 x_0:	tya		; 0
 	jmp	Lcd72
 
+
 x_minus_1:
 	lda	#$ff	; -1
 	pha
 	jmp	Lcd64
 
+
 x_20h:
 	fcb	$00	; 20H
-	fcb	$14,$20
+	tag	clit
+	fcb	$20
 
 x_30h:
 	fcb	$00	; 30H
-	fcb	$14,$30
+	tag	clit
+	fcb	$30
 
 x_80h:
 	fcb	$00	; 80H
-	fcb	$14,$80
+	tag	clit
+	fcb	$80
 
 x_num_decb:
 	fcb	$00	; #DECB
-	fcb	$13,$d7
+	tag	clit2
+	fcb	$d7
 
 x_falsify:
 	fcb	$00	; FALSIFY
-	fcb	$0f,$33,$00
+	tag	drop
+	tag	0
+
+	fcb	$00
+
 
 x_and:
 	lda	z00,x	; AND
@@ -2642,38 +2700,67 @@ x_pushkey:
 
 x_toggle:
 	fcb	$00	; TOGGLE
-	fcb	$1c,$15,$a6,$22,$16
+	tag	over		; OVER @ XOR SWAP !
+	tag	at
+	tag	xor
+	tag	swap
+	tag	bang
 
 x_set_bits:
 	fcb	$00	; SET.BITS
-	fcb	$1c,$15,$3a,$22,$16
+	tag	over		; OVER @ OR SWAP !
+	tag	at
+	tag	or
+	tag	swap
+	tag	bang
 
 x_clr_bits:
 	fcb	$00	; CLR.BITS
-	fcb	$34,$a6,$1c,$15,$39,$22,$16
+	tag	minus_1		; -1 XOR OVER @ AND SWAP !
+	tag	xor
+	tag	over
+	tag	at
+	tag	and
+	tag	swap
+	tag	bang
 
 x_save:
 	fcb	$00	; SAVE
-	fcb	$27,$20,$1b,$23,$15,$23,$26
+	tag	2_r_to		; 2R> ROT DUP >R @ >R 2>R
+	tag	rot
+	tag	dup
+	tag	to_r
+	tag	at
+	tag	to_r
+	tag	2_to_r
 
 x_restore:
 	fcb	$00	; RESTORE
-	fcb	$27,$27,$16,$26
+	tag	2_r_to		; 2R> 2R> ! 2>R
+	tag	2_r_to
+	tag	bang
+	tag	2_to_r
 
 x_crestore:
 	fcb	$00	; CRESTORE
-	fcb	$27,$27,$18,$26,$00
+	tag	2_r_to		; 2R> 2R> C! 2>R
+	tag	2_r_to
+	tag	c_bang
+	tag	2_to_r
+
+	fcb	$00
+
 
 x_tag_a7:
 	php		; unknown tag $a7
-	sei
+	sei		; save P in z72, then disable interrupts
 	pla
 	sta	z72
 	jmp	next
 
 x_tag_a8:
 	lda	z72	; unknown tag $a8
-	pha
+	pha		; restore P from z72
 	plp
 	jmp	next
 
@@ -2699,14 +2786,14 @@ x_p_call:
 	sta	z42+1
 	jmp	(z42)
 
-Sd0fb:	lda	#$80
+scomp:	lda	#$80
 	eor	z01,x
 	sta	z01,x
 	lda	#$80
 	eor	z03,x
 	sta	z03,x
 
-Sd107:	lda	z03,x
+ucomp:	lda	z03,x
 	cmp	z01,x
 	bne	Ld111
 	lda	z02,x
@@ -2721,28 +2808,28 @@ Ld118:	pha
 	jmp	Lcd8c
 
 x_equal_to:
-	jsr	Sd107	; =
+	jsr	ucomp	; =
 	beq	Ld116
 	bne	Ld112
 
 x_not_equal_to:
-	jsr	Sd107	; <>
+	jsr	ucomp	; <>
 	beq	Ld112
 	bne	Ld116
 
 x_less_than:
-	jsr	Sd0fb	; <
+	jsr	scomp	; <
 	bcc	Ld116
 	bcs	Ld112
 
 x_greater_than:
-	jsr	Sd0fb	; >
+	jsr	scomp	; >
 	beq	Ld112
 	bcs	Ld116
 	bcc	Ld112
 
 x_u_less_than:
-	jsr	Sd107	; U<
+	jsr	ucomp	; U<
 	bcc	Ld116
 	bcs	Ld112
 
@@ -2805,7 +2892,7 @@ x_p_if_its:
 	bne	Ld149
 
 x_p_eq_if:
-	jsr	Sd107	; (=IF)
+	jsr	ucomp	; (=IF)
 	bne	Ld1ac
 Ld1a6:	jsr	advance_tag_pointer
 	jmp	x_2drop
@@ -2815,7 +2902,7 @@ Ld1ac:	inx
 	jmp	Ld149
 
 x_p_less_if:
-	jsr	Sd0fb	; (<IF)
+	jsr	scomp	; (<IF)
 	bcc	Ld1a6
 	bcs	Ld1ac
 
@@ -2882,7 +2969,7 @@ x_p_plus_loop:
 
 x_p_loop:
 	lda	#$01	; (LOOP)
-Ld21e:	stx	z62
+Ld21e:	stx	xsave
 	ldx	z24
 	clc
 	adc	d0104,x
@@ -2916,7 +3003,7 @@ Ld259:	lda	d0100,x
 Ld263:	jmp	Lcd08
 
 x_p_case:
-	jsr	Sd107	; (CASE)
+	jsr	ucomp	; (CASE)
 	bne	Ld271
 	jsr	advance_tag_pointer
 	jmp	x_2drop
@@ -2924,10 +3011,10 @@ x_p_case:
 Ld271:	jmp	Ld149
 
 x_p_query_do:
-	jsr	Sd0fb	; (?DO)
+	jsr	scomp	; (?DO)
 	bcc	Ld285
 	beq	Ld285
-	jsr	Sd0fb
+	jsr	scomp
 	jsr	advance_tag_pointer
 	clc
 	jmp	x_p_do
@@ -2955,7 +3042,7 @@ x_query_range:
 
 x_bin_to_ascii:
 	fcb	$00	; B>A
-	tag	30h
+	tag	30h		; $30 + DUP 9 > IF 7 + THEN
 	tag	plus
 	tag	dup
 	literal	'9'
@@ -3118,8 +3205,11 @@ Ld33e:	rol	z04,x
 
 x_times:
 	fcb	$00	; *
-	fcb	$ab,$0f		; U* DROP
+	tag	u_times		; U* DROP
+	tag	drop
+
 	fcb	$00
+
 
 x_negate:
 	sec		; NEGATE
@@ -3170,7 +3260,9 @@ x_m_times:
 	tag	u_times
 	tag	p_call			; (CALL
 	fdb	Sd372
+
 	fcb	$00
+
 
 x_d_plus:
 	lda	z02,x	; D+
@@ -3333,6 +3425,7 @@ x_mod:
 
 	fcb	$00
 
+
 x_shift:
 	lda	z01,x	; SHIFT
 	bmi	Ld441
@@ -3357,7 +3450,7 @@ Ld44e:	jmp	x_drop
 
 x_charbuf:
 	fcb	$00	; CHARBUF
-	literal	D0236
+	literal	D0236		; $0236 +
 	tag	plus
 
 	fcb	$00
@@ -3421,7 +3514,8 @@ x_cancel:
 	jsr	Sd479	; CANCEL
 	jmp	x_drop
 
-Sd4b1:	ldy	#$00
+
+setup:	ldy	#$00
 	asl
 	sta	z41
 Ld4b6:	lda	z00,x
@@ -3439,12 +3533,12 @@ x_flee:
 	tag	dup		; DUP d0280 !
 	literal	d0280
 	tag	bang
-	tag	dup		; DUP $ff and 3 * d021b + @ d027e !
+	tag	dup		; DUP $ff and 3 * tvect0 + @ d027e !
 	literal	$00ff
 	tag	and
 	tag	3
 	tag	times
-	literal	d021b
+	literal	tvect0
 	tag	plus
 	tag	at
 	literal	d027e
@@ -3463,17 +3557,17 @@ x_flee:
 
 Sd4e6:	jsr	Scbf9
 	lda	#$03
-	jsr	Sd4b1
+	jsr	setup
 	lda	z42+1
 	bpl	Ld4f3
 	rts
 
-Ld4f3:	stx	z62
+Ld4f3:	stx	xsave
 	dex
 	dex
 	dex
 	dex
-	jsr	Sd107
+	jsr	ucomp
 	bcs	Sd521
 	lda	z42+1
 	adc	z45
@@ -3509,7 +3603,7 @@ Ld52c:	lda	(z46),y
 	inc	z47
 	dec	z42+1
 	bpl	Sd521
-Ld53d:	ldx	z62
+Ld53d:	ldx	xsave
 	rts
 
 x_move:
@@ -3517,7 +3611,7 @@ x_move:
 	jmp	next
 
 x_dmove:
-	lda	z31	; DMOVE
+	lda	latchs	; DMOVE
 	ora	#$80
 	jsr	Sc36f
 	jsr	Sd4e6
@@ -3527,10 +3621,10 @@ x_dmove:
 x_cmove:
 	jsr	Scbf9	; CMOVE
 	lda	#$03
-	jsr	Sd4b1
+	jsr	setup
 	lda	z42+1
 	bmi	Ld567
-	stx	z62
+	stx	xsave
 	jsr	Sd521
 Ld567:	jmp	next
 
@@ -3563,22 +3657,51 @@ x_bigmove:
 
 x_fill:
 	fcb	$00	; FILL
-	fcb	$22,$1a,$4c,$0c,$23,$1c,$18,$1b
-	fcb	$42,$24,$40,$01,$2e,$52,$02,$0e
+	tag	swap		; SWAP ?DUP IF
+	tag	query_dup
+	tag	p_if
+	fcb	$0c
+	tag	to_r		;   >R OVER C! DUP 1+ R> 1- CMOVE
+	tag	over
+	tag	c_bang
+	tag	dup
+	tag	1_plus
+	tag	r_to
+	tag	1_minus
+	tag	cmove
+	tag	p_else		; ELSE
+	fcb	$02
+	tag	2drop		;   2DROP THEN
+
 
 x_erase:
 	fcb	$00	; ERASE
-	fcb	$33,$01,$31
+	tag	0		; 0 FILL
+	tag	fill
 
-x_blank:
-	fcb	$00	; BLANK
-	fcb	$35,$01,$31
+
+x_blanks:
+	fcb	$00	; BLANKS
+	tag	20h		; 20H FILL
+	tag	fill
+
 
 x_jump_tab:
 	fcb	$00	; <JUMP-TAB>
-	fcb	$43,$24,$1b,$41,$23,$1b,$15,$3e
-	fcb	$3d,$15,$47
+	tag	2_times		; 2* R> DUP 2+ >R DUP @ - + @ EXECUTE
+	tag	r_to
+	tag	dup
+	tag	2_plus
+	tag	to_r
+	tag	dup
+	tag	at
+	tag	minus
+	tag	plus
+	tag	at
+	tag	execute
+
 	fcb	$00
+
 
 Sd5a9:	jsr	Sc383
 Ld5ac:	lda	d58fb
@@ -3591,11 +3714,11 @@ Ld5ac:	lda	d58fb
 	pla
 	rts
 
-Sd5c0:	stx	z62
+Sd5c0:	stx	xsave
 	jsr	Sd5a9
 	pha
 	txa
-	ldx	z62
+	ldx	xsave
 	dex
 	dex
 	sty	z01,x
@@ -3633,48 +3756,94 @@ Ld5e6:	sty	z00,x
 	pla
 	jmp	Lcd72
 
+
 x_s_d_times:
 	fcb	$00	; SD*
-	fcb	$20,$1c,$ab,$aa,$ab,$0f,$3d
+	tag	rot		; ROT OVER U* 2SWAP U* DROP +
+	tag	over
+	tag	u_times
+	tag	2swap
+	tag	u_times
+	tag	drop
+	tag	plus
+
 
 x_get_local:
 	fcb	$00	; GET.LOCAL
-	fcb	$01,$35,$0f
+	tag	get_gmt		; GET.GMT DROP
+	tag	drop
+
 
 x_set_delay_long:
 	fcb	$00	; SET.DELAY.LONG
-	fcb	$23,$33,$20,$01,$35,$2f,$21,$3d
-	fcb	$1b,$23,$11,$00,$01,$39,$4c,$04
-	fcb	$32,$33,$65,$65,$24,$25,$1b,$42
-	fcb	$20,$22,$18,$41,$5f,$24,$01,$06
+	tag	to_r		; >R 0 ROT GET.GMT 4 ROLL +
+	tag	0
+	tag	rot
+	tag	get_gmt
+	tag	4
+	tag	roll
+	tag	plus
+	tag	dup		; DUP >R $0100 AND
+	tag	to_r
+	literal	$0100
+	tag	and
+	tag	p_if		; IF
+	fcb	$04
+	tag	1		;   1 0 D+ D+ R> R DUP 1+
+	tag	0
+	tag	d_plus
+	tag	d_plus
+	tag	r_to
+	tag	r
+	tag	dup
+	tag	1_plus
+	tag	rot
+	tag	swap
+	tag	c_bang
+	tag	2_plus
+	tag	2bang
+	tag	r_to
+	tag	set_timer
+
 
 x_set_delay:
 	fcb	$00	; SET.DELAY
-	fcb	$14,$ff,$20,$5d,$3c,$39,$23,$39
-	fcb	$24,$20,$ae
+	literal	$00ff		; $00ff ROT 2DUP FLIP AND >R AND R> ROT
+	tag	rot
+	tag	2dup
+	tag	flip
+	tag	and
+	tag	to_r
+	tag	and
+	tag	r_to
+	tag	rot
+	tag	set_delay_long	; SET.DELAY.LONG
 
-Dd643:	fcb	$00
-	fcb	$41,$42,$43,$44,$45,$46,$47	; ".ABCDEFG"
-	fcb	$48,$49,$4a,$81,$82,$85,$86,$88	; "HIJ....."
-	fcb	$89
+	fcb	$00
 
-Dd654:	fcb	$8b,$00,$3f,$9e,$9d,$1f,$3e,$9c
-	fcb	$2e,$2d,$8f,$00,$3f,$1f,$3e,$2e
-	fcb	$2d,$4f
+
+Dd644:	fcb	$41,$42,$43,$44,$45,$46,$47,$48	; ".ABCDEFGH"
+	fcb	$49,$4a,$81,$82,$85,$86,$88,$89	; "IJ......"
+	fcb	$8b
+
+Dd655:	fcb	$00,$3f,$9e,$9d,$1f,$3e,$9c,$2e
+	fcb	$2d,$8f,$00,$3f,$1f,$3e,$2e,$2d
+	fcb	$4f
 
 Sd666:	pha
 	and	#$3f
 	sta	z42
 	pla
 	ldy	#$11
-Ld66e:	cmp	Dd643,y
+Ld66e:	cmp	Dd644-1,y
 	bne	Ld67c
-	lda	Dd654,y
+	lda	Dd655-1,y
 	and	#$3f
 	sta	z42
 	ldy	#$01
 Ld67c:	dey
 	bne	Ld66e
+
 	ldy	#$06
 Ld681:	lda	(z35),y
 	and	#$01
@@ -3706,13 +3875,13 @@ x_attach:
 	lda	z3d
 	pha
 	jsr	Sc383
-	stx	z62
+	stx	xsave
 	ldy	z00,x
 	cpy	#$10
 	bcc	Ld6c2
 Ld6b6:	pla
 	jsr	Scb0e
-	ldx	z62
+	ldx	xsave
 	jsr	Sc37d
 	jmp	Ld112
 
@@ -3720,7 +3889,7 @@ Ld6c2:	lda	z02,x
 	jsr	Sd666
 Ld6c7:	bne	Ld6b6
 	ldy	z42+1
-	ldx	z62
+	ldx	xsave
 	lda	d2023
 	and	#$c0
 	bne	Ld6e0
@@ -3749,37 +3918,72 @@ Ld6fa:	tya
 	sta	devtbl,y
 	pla
 	jsr	Scb0e
-	ldx	z62
+	ldx	xsave
 	jsr	Sc37d
 	jmp	Ld116
 
 x_set_crom:
 	jsr	Sc383	; SET.CROM
-	stx	z62
+	stx	xsave
 	lda	z00,x
 	jsr	Sd666
 	php
 	jsr	Sc37d
-	ldx	z62
+	ldx	xsave
 	plp
 	jmp	Lcfd3
 
+
 x_flee_cap:
 	fcb	$00	; FLEE.CAP
-	fcb	$14,$3c,$17,$37,$3a,$11,$28,$40
-	fcb	$5e,$14,$ff,$39,$1b,$23,$30,$62
-	fcb	$13,$1b,$3d,$22,$1c,$16,$41,$18
-	fcb	$24,$1a,$4e,$03,$14,$c0,$01,$19
-	fcb	$85,$fd
+	literal	z3c		; z3c @ 80H OR ROMVECT 2@ $ff AND DUP >R
+	tag	c_at
+	tag	80h
+	tag	or
+	literal	romvect
+	tag	2at
+	literal	$00ff
+	tag	and
+	tag	dup
+	tag	to_r
+	tag	3		; 3 * TVECT0 + SWAP OVER BANG 2+ C!
+	tag	times
+	literal	tvect0
+	tag	plus
+	tag	swap
+	tag	over
+	tag	bang
+	tag	2_plus
+	tag	c_bang
+	tag	r_to		; R> ?DUP
+	tag	query_dup
+	tag	p_notif
+	fcb	$03
+	literal	$00c0
+	tag	jump
+	fdb	Lfd85
+
 
 x_flee_crom:
 	fcb	$00	; FLEE.CROM
-	fcb	$33,$11,$25,$20,$20,$01,$38,$28
-	fcb	$4d,$23,$0e
+	tag	0	;	0 $2025 ROT SET.CROM NOT UNTIL 2DROP
+	literal	$2025
+	tag	rot
+	tag	set_crom
+	tag	not
+	tag	p_until
+	fcb	$23
+	tag	2drop
+
 
 Sd74f:	fcb	$00
-	fcb	$20,$1c,$22,$42		; ROT OVER SWAP 1+
-	fcb	$3e,$0d			; - (;P)
+	tag	rot		; ROT OVER SWAP 1+ - (;P)
+	tag	over
+	tag	swap
+	tag	1_plus
+	tag	minus
+	tag	p_semi_p
+
 
 Sd756:	ldx	#$00
 	ldy	z48
@@ -3791,8 +3995,8 @@ Sd756:	ldx	#$00
 x_locate:
 	jsr	Sd74f	; LOCATE
 	lda	#$04
-	jsr	Sd4b1
-	stx	z62
+	jsr	setup
+	stx	xsave
 	lda	z45
 	bne	Ld7b8
 	lda	z42+1
@@ -3800,7 +4004,7 @@ x_locate:
 	lda	z42+2
 	ora	z45
 	bne	Ld78f
-Ld779:	ldx	z62
+Ld779:	ldx	xsave
 	dex
 	dex
 	sec
@@ -3834,30 +4038,59 @@ Ld7b1:	inx
 	bne	Ld792
 	inc	z42+1
 	bne	Ld792
-Ld7b8:	ldx	z62
+Ld7b8:	ldx	xsave
 	lda	#$00
 	jmp	Lcd72
 
+
 x_cfind:
 	fcb	$00	; CFIND
-	fcb	$14,$37,$15,$40,$22,$1c,$18,$32
-	fcb	$01,$3b
+	literal	z37		; z37 @ 1- SWAP OVER C! 1 LOCATE
+	tag	at
+	tag	1_minus
+	tag	swap
+	tag	over
+	tag	c_bang
+	tag	1
+	tag	locate
+
 
 x_string_plus:
 	fcb	$00	; S+
-	fcb	$22,$1c,$3e,$23,$3d,$24
+	tag	swap		; SWAP OVER - >R + R>
+	tag	over
+	tag	minus
+	tag	to_r
+	tag	plus
+	tag	r_to
+
 
 x_string_equal:
 	fcb	$00	; S=
-	fcb	$1b,$2f,$1d,$50,$0a,$01,$3b,$1b
-	fcb	$4c,$03,$0e,$32,$52,$03,$61,$33
+	tag	dup		; DUP 4 PICK
+	tag	4
+	tag	pick
+	tag	p_eq_if
+	fcb	$0a
+	tag	locate
+	tag	dup
+	tag	p_if
+	fcb	$03
+	tag	2drop
+	tag	1
+	tag	p_else
+	fcb	$03
+	tag	fdrop
+	tag	0
+
 	fcb	$00
+
 
 Sd7e3:	cmp	#$1b
 	bcc	Ld7e8
 	rts
 
-Ld7e8:	stx	z62
+Ld7e8:	stx	xsave
 	tay
 	lda	d0236,y
 	sta	z46
@@ -3969,7 +4202,7 @@ Ld8a2:	lda	(z42),y
 	sta	d5800,x
 Ld8ba:	lda	#$7f
 	jsr	Sc390
-	ldx	z62
+	ldx	xsave
 	rts
 
 x_encode:
@@ -3977,13 +4210,21 @@ x_encode:
 	jsr	Sd7e3
 	jmp	x_drop
 
+
 Sd8ca:	fcb	$00
-	fcb	$13,$d1,$6e,$14,$67,$17,$71,$0d
+	literal	d02d1
+	tag	cancel
+	literal	z67
+	tag	c_at
+	tag	encode
+	tag	p_semi_p
+
 
 Sd8d3:	fcb	$00
 	fcb	$14,$33,$17,$37,$39,$4c,$0c,$13
 	fcb	$d1,$17,$4c,$07,$14,$70,$33,$13
 	fcb	$d1,$ae,$0d
+
 
 Sd8e7:	jsr	Sd8d3
 	ldy	#$1a
@@ -4117,7 +4358,7 @@ x_scrolr:
 	fdb	Td9a4
 	fcb	$00
 
-x_wait:	stx	z62	; WAIT
+x_wait:	stx	xsave	; WAIT
 	php
 	sei
 	lda	(z00,x)
@@ -4128,7 +4369,7 @@ x_wait:	stx	z62	; WAIT
 	jmp	x_drop
 
 x_waitm:
-	stx	z62	; WAITM
+	stx	xsave	; WAITM
 	php
 	sei
 	lda	z00,x
@@ -4137,7 +4378,7 @@ x_waitm:
 	bpl	Lda30
 Lda11:	lda	(z02,x)
 	bpl	Lda29
-	ldx	z62
+	ldx	xsave
 	txa
 	clc
 	adc	z00,x
@@ -4158,14 +4399,21 @@ Lda29:	inx
 	bcc	Lda11
 Lda30:	ldx	#$15
 	jsr	Scbf9
-	jsr	Sc70f
+	jsr	sleep
 	plp
 	jmp	Lcd08
 
+; da3c
 	fcb	$00
-	fcb	$0a,$0d,$d8,$cc,$c0,$b4,$a9
-	fcb	$9f,$96,$8d,$84,$7c,$75,$6d,$a9
-	fcb	$02,$20,$b1,$d4,$86,$62,$a5,$31
+	fcb	$0a,$0d
+
+Dda3f:	fcb	$d8,$cc,$c0,$b4,$a9,$9f,$96,$8d
+	fcb	$84,$7c,$75,$6d
+
+Sda4b:	lda	#$02
+	jsr	setup
+; X disassemble
+	fcb	$86,$62,$a5,$31
 	fcb	$c8,$88,$f0,$05,$c5,$42,$4c,$61
 	fcb	$da,$a4,$44,$49,$20,$20,$61,$c3
 	fcb	$a6,$42,$ca,$d0,$fd,$2c,$dd,$02
@@ -4174,11 +4422,36 @@ Lda30:	ldx	#$15
 
 x_squeak:
 	fcb	$00	; SQUEAK
-	fcb	$31,$6c,$13,$dd,$70,$1a,$4c,$16
-	fcb	$40,$14,$0c,$69,$31,$67,$63,$2f
-	fcb	$22,$6c,$22,$11,$3f,$da,$3d,$17
-	fcb	$0c,$4b,$da,$52,$08,$13,$dd,$17
-	fcb	$37,$39,$4d,$05
+	tag	2
+	tag	SHIFT
+	literal	d02dd
+	tag	set_delay
+	tag	query_dup
+	tag	p_if
+	fcb	$16
+	tag	1_minus
+	literal	$0c
+	tag	div_mod
+	tag	2
+	tag	min
+	tag	negate
+	tag	4
+	tag	swap
+	tag	shift
+	tag	swap
+	literal	dda3f
+	tag	plus
+	tag	c_at
+	tag	p_call
+	fdb	Sda4b
+	tag	p_else
+	fcb	$08
+	literal	d02dd
+	tag	c_at
+	tag	80h
+	tag	and
+	tag	p_until
+	fcb	$05
 
 Lda9b:	fcb	$00
 	fcb	$14,$15,$35,$01,$48,$0d
@@ -4238,7 +4511,7 @@ Ldb51:	fcb	$00
 Sdb65:	lda	#$80
 	php
 	sei
-	jsr	Scbd2
+	jsr	postecb
 	lda	(z35),y
 	and	#$7f
 	sta	(z35),y
@@ -4348,7 +4621,7 @@ x_ropen:
 	pha
 	sty	z5e
 	stx	z61
-	lda	z31
+	lda	latchs
 	sta	z5f
 	lda	#$00
 	sta	z5d
@@ -4457,7 +4730,7 @@ Ldd3d:	pla
 	beq	Ldd45
 	jsr	Scb0e
 Ldd45:	lda	z5f
-	jsr	Sc361
+	jsr	dolatch
 	ldx	z61
 	dec	d020d
 	lda	z5d
@@ -4544,40 +4817,65 @@ x_emit_esc:
 x_query_key:
 	lda	d0206	; ?KEY
 	eor	d0207
-	ora	d0208
+	ora	funct
 	ora	d020a
 	beq	Lde27
 	iny
 Lde27:	tya
 	jmp	Lcd72
 
+
 x_space:
 	fcb	$00	; SPACE
-	fcb	$35,$76
+	tag	20h
+	tag	emit
+
 
 x_cr:
 	fcb	$00	; CR
-	fcb	$14,$0d,$76
+	literal	$0d
+	tag	emit
+
 
 x_fast_cr:
 	fcb	$00	; FAST.CR
-	fcb	$14,$64,$37,$45,$7e
+	literal	z64
+	tag	80h
+	tag	set_bits
+	tag	cr
+
 
 x_spaces:
 	fcb	$00	; SPACES
-	fcb	$33,$59,$03,$7d,$57
+	tag	0
+	tagrf	p_query_do,Tde43
+	tag	space
+	tag	p_loop
+Tde43:
+
 
 x_start_cursor:
 	fcb	$00	; START.CURSOR
-	fcb	$14,$64,$35,$45,$b1
+	literal	z64
+	tag	20h
+	tag	set_bits
+	tag	refresh
+
 
 x_stop_cursor:
 	fcb	$00	; STOP.CURSOR
-	fcb	$14,$64,$35,$46,$14,$67,$17,$71
+	literal	z64
+	tag	20h
+	tag	clr_bits
+	literal	z67
+	tag	c_at
+	tag	encode
+
 
 x_ascii_to_bin:
 	fcb	$00	; A>B
-	fcb	$01,$1a,$1b,$36,$51,$04,$14,$10
+	fcb	$01,$1a
+	fcb	$1b,$36,$51,$04,$14,$10
 	fcb	$3d,$14,$3a,$14,$40,$5a,$4c,$02
 	fcb	$38,$1b,$14,$40,$4b,$4c,$03,$2c
 	fcb	$3e,$36,$3e,$33,$14,$23,$5a,$62
@@ -4639,15 +4937,17 @@ x_restore_task:
 	fcb	$16,$13,$13,$16,$01,$15,$33,$b0
 	fcb	$a8,$26,$b1,$01,$5e,$00,$a2,$ff
 	fcb	$86,$34,$00,$14,$74,$14,$28,$16
-	fcb	$7a,$05,$52,$45,$53,$45,$54,$11	; "z.RESET."
+	fcb	$7a
+	cstr	"RESET"
+	fcb	$11
 	fcb	$2c,$df,$0a
 
 x_soft_emit:
 	fcb	$00	; SOFT.EMIT
 	fcb	$14,$1b,$74,$14,$47,$74,$74,$00
-	fcb	$7a,$0f,$44,$45,$46,$49,$4e,$45	; "z.DEFINE"
-	fcb	$20,$46,$55,$4e,$43,$54,$49,$4f	; " FUNCTIO"
-	fcb	$4e,$7e,$11,$01,$60,$14,$28,$16
+	fcb	$7a
+	cstr	"DEFINE FUNCTION"
+	fcb	$7e,$11,$01,$60,$14,$28,$16
 	fcb	$1b,$14,$15,$3e,$2f,$6c,$13,$82
 	fcb	$3d,$1b,$79,$14,$0e,$67,$78,$14
 	fcb	$5f,$76,$33,$72,$75,$14,$15,$14
@@ -4657,7 +4957,9 @@ x_soft_emit:
 	fcb	$54,$32,$72,$14,$5f,$76,$1b,$72
 	fcb	$22,$5d,$3d,$2f,$21,$22,$18,$18
 	fcb	$14,$67,$17,$14,$0e,$4b,$4d,$32
-	fcb	$7a,$04,$46,$55,$4c,$4c,$7e,$7d	; "z.FULL~}"
+	fcb	$7a
+	cstr	"FULL"
+	fcb	$7e,$7d
 	fcb	$0f
 
 Ldfaf:	fcb	$00
@@ -4668,7 +4970,7 @@ Ldfaf:	fcb	$00
 	fcb	$57
 
 x_sizeram:
-	stx	z62	; SIZERAM
+	stx	xsave	; SIZERAM
 	jsr	Sc3fa
 	jmp	Lcd08
 
@@ -4757,7 +5059,7 @@ Se0bc:	sta	z42
 	cmp	d02f5
 Le0d5:	rts
 
-Se0d6:	jsr	Se0bc
+getmemt:	jsr	Se0bc
 	ldy	z42+1
 	lda	z42+2
 	bcc	Le0e3
@@ -4769,7 +5071,7 @@ x_grab:
 	lda	z01,x	; GRAB
 	bne	Le0f8
 	lda	z00,x
-	jsr	Se0d6
+	jsr	getmemt
 	bcc	Le0f8
 	sty	z00,x
 	sta	z01,x
@@ -4797,7 +5099,7 @@ x_letgo:
 	fcb	$39,$1b,$15,$41,$14,$37,$16,$16
 	fcb	$00
 
-Le123:	jsr	Scd0d
+Le123:	jsr	dodoes
 	fcb	$17,$41,$01,$6e,$1b,$4c,$10,$14
 	fcb	$37,$1b,$15,$3f,$14,$39,$15,$1c
 	fcb	$16,$14,$39,$16,$16,$32
@@ -4884,54 +5186,56 @@ Le1b5:	asl	z00,x
 	fcb	$33,$2a,$5a,$4c,$0e,$1a,$4e,$03
 	fcb	$14,$0a,$14,$0b,$22,$3e,$1b,$13
 	fcb	$17,$18,$0f,$a7,$01,$5d,$a8,$33
-	fcb	$13,$0b,$18,$0d,$00,$7a,$0c,$2c
+	fcb	$13,$0b,$18,$0d
+
+
+Se1f1:	fcb	$00
+	fcb	$7a,$0c,$2c
 	fcb	" USE ARROWS"
+
 
 x_secs:
 	fcb	$00	; SECS
 	fcb	$3c,$a5,$22,$1c,$70,$0a,$00,$01
-	fcb	$5c,$14,$64,$14,$12,$45,$7a,$18
-
-	fcb	"PRESS KEY FOR DEFINITION"
-
+	fcb	$5c,$14,$64,$14,$12,$45,$7a
+	cstr	"PRESS KEY FOR DEFINITION"
 	fcb	$75,$14,$64,$31,$46,$7e,$4f,$0e
-	fcb	$16,$7a,$13
-
-	fcb	"ENTER 1-9 FOR SPEED"
-
+	fcb	$16,$7a
+	cstr	"ENTER 1-9 FOR SPEED"
 	fcb	$4f,$84
-	fcb	$0e,$7a,$0b,$49,$4e,$53,$45,$52	; ".z.INSER"
-	fcb	$54,$20,$54,$45,$58,$54,$4f,$0d	; "T TEXTO."
-	fcb	$14,$7a,$11,$45,$4e,$44,$53,$20	; ".z.ENDS "
-	fcb	$43,$55,$52,$52,$45,$4e,$54,$20	; "CURRENT "
-	fcb	$4c,$49,$4e,$45,$4f,$80,$19,$7a	; "LINEO..z"
-	fcb	$16,$44,$49,$53,$50,$4c,$41,$59	; ".DISplaY"
-	fcb	$53,$20,$50,$52,$45,$56,$49,$4f	; "S PREVIO"
-	fcb	$55,$53,$20,$4c,$49,$4e,$45,$4f	; "US LINEO"
-	fcb	$83,$15,$7a,$12,$44,$49,$53,$50	; "..z.DISP"
-	fcb	$4c,$41,$59,$53,$20,$4e,$45,$58	; "LAYS NEX"
-	fcb	$54,$20,$4c,$49,$4e,$45,$4f,$07	; "T LINEO."
-	fcb	$11,$7a,$0e,$52,$4f,$54,$41,$54	; ".z.ROTAT"
-	fcb	$45,$20,$44,$49,$53,$50,$4c,$41	; "E DISpla"
-	fcb	$59,$4f,$86,$11,$7a,$0e,$4c,$4f	; "YO..z.LO"
-	fcb	$43,$4b,$53,$20,$4e,$45,$58,$54	; "CKS NEXT"
-	fcb	$20,$4b,$45,$59,$4f,$8a,$0b,$7a	; " KEYO..z"
-	fcb	$08,$43,$41,$50,$49,$54,$41,$4c	; ".CAPITAL"
-	fcb	$53,$4f,$8f,$0e,$7a,$0b,$50,$55	; "SO..z.PU"
-	fcb	$4e,$43,$54,$55,$41,$54,$49,$4f	; "NCTUATIO"
-	fcb	$4e,$14,$8b,$14,$8e,$5a,$4c,$12	; "N....zL."
-	fcb	$7a,$0f,$50,$52,$4f,$47,$52,$41	; "z.PROGRA"
-	fcb	$4d,$20,$43,$4f,$4e,$54,$52,$4f	; "M CONTRO"
-	fcb	$4c,$14,$81,$14,$82,$5a,$4c,$0f	; "L....zL."
-	fcb	$7a,$0c,$4d,$4f,$56,$45,$53,$20	; "z.MOVES "
-	fcb	$43,$55,$52,$53,$4f,$52,$4f,$89	; "CURSORO."
-	fcb	$12,$7a,$0f,$53,$45,$41,$52,$43	; ".z.SEARC"
-	fcb	$48,$20,$46,$4f,$52,$20,$54,$45	; "H FOR TE"
-	fcb	$58,$54,$4f,$0b,$14,$7a,$11,$53	; "XTO..z.S"
-	fcb	$45,$4c,$45,$43,$54,$20,$50,$45	; "ELECT PE"
-	fcb	$52,$49,$50,$48,$45,$52,$41,$4c	; "RIPHERAL"
+	fcb	$0e,$7a
+	cstr	"INSERT TEXT"
+	fcb	$4f,$0d
+	fcb	$14,$7a
+	cstr	"ENDS CURRENT LINE"
+	fcb	$4f,$80,$19,$7a
+	cstr	"DISPLAYS PREVIOUS LINE"
+	fcb	$4f
+	fcb	$83,$15,$7a
+	cstr	"DISPLAYS NEXT LINE"
+	fcb	$4f,$07
+	fcb	$11,$7a
+	cstr	"ROTATE DISPLAY"
+	fcb	$4f,$86,$11,$7a
+	cstr	"LOCKS NEXT KEY"
+	fcb	$4f,$8a,$0b,$7a
+	cstr	"CAPITALS"
+	fcb	$4f,$8f,$0e,$7a
+	cstr	"PUNCTUATION"
+	fcb	$14,$8b,$14,$8e,$5a,$4c,$12
+	fcb	$7a
+	cstr	"PROGRAM CONTROL"
+	fcb	$14,$81,$14,$82,$5a,$4c,$0f
+	fcb	$7a
+	cstr	"MOVES CURSOR"
+	fcb	$4f,$89
+	fcb	$12,$7a
+	cstr	"SEARCH FOR TEXT"
+	fcb	$4f,$0b,$14,$7a
+	cstr	"SELECT PERIPHERAL"
 	fcb	$4f,$14,$02,$b5,$4f,$85,$0c,$7a
-	fcb	$06,$44,$45,$4c,$45,$54,$45,$0c	; ".DELETE."
+	cstr	"DELETE"
+	fcb	$0c
 	fcb	$f1,$e1,$14,$15,$14,$17,$5a,$4c
 	fcb	$06,$0c,$45,$df,$52,$09,$14,$67
 	fcb	$17,$4c,$04,$30,$01,$71,$0f,$01
@@ -4986,7 +5290,7 @@ Pe367:	fcb	$00
 	fcb	$12
 	tag	fast_cr
 	tag	p_dot_quote
-	fcb	$07,"BAT LOW"
+	cstr	"BAT LOW"
 	tag	beep
 	tag	3
 	tag	secs
@@ -5156,7 +5460,7 @@ chargen:
 	fcb	$0f,$02,$04,$02,$0f	; $86 superscript M
 	fcb	$10,$10,$54,$10,$10	; $87 division symbol
 	fcb	$44,$28,$10,$28,$44	; $88 multiplication symbol
-	fcb	$ff,$ff,$ff,$ff,$ff	; $89 solid box
+De665:	fcb	$ff,$ff,$ff,$ff,$ff	; $89 solid box
 	fcb	$ff,$81,$81,$81,$ff	; $8a hollow box
 	fcb	$70,$8a,$88,$7a,$80	; $8b a with umlaut
 	fcb	$70,$8a,$88,$8a,$70	; $8c o with umlaut
@@ -5203,7 +5507,7 @@ x_ram_n:
 	fcb	$04,$33,$10,$0f,$00
 
 x_dvcset:
-	stx	z62	; DVCSET
+	stx	xsave	; DVCSET
 	jsr	Sc5a8
 	jmp	Lcd08
 
@@ -5212,11 +5516,18 @@ x_tag_176:
 	fcb	$41,$2d,$62,$14,$35,$15,$3d,$1b
 	fcb	$17,$01,$0a,$0f,$11,$28,$20,$79
 	fcb	$78,$7d,$1b,$42,$17,$1b,$35,$39
-	fcb	$4c,$09,$7a,$04,$4f,$55,$54,$2c	; "L.z.OUT,"
-	fcb	$52,$06,$7a,$03,$49,$4e,$2c,$14	; "R.z.IN,."
-	fcb	$10,$39,$4c,$07,$7a,$02,$4f,$4e	; ".9L.z.ON"
-	fcb	$52,$06,$7a,$03,$4f,$46,$46,$7a	; "R.z.OFFz"
-	fcb	$06,$2c,$53,$4c,$4f,$54,$3d,$17	; ".,SLOT=."
+	fcb	$4c,$09,$7a
+	cstr	"OUT,"
+	fcb	$52,$06,$7a
+	cstr	"IN,"
+	fcb	$14
+	fcb	$10,$39,$4c,$07,$7a
+	cstr	"ON"
+	fcb	$52,$06,$7a
+	cstr	"OFF"
+	fcb	$7a
+	cstr	",SLOT="
+	fcb	$17
 	fcb	$11,$fe,$ff,$6c,$5b,$76
 
 x_cfile:
@@ -5226,16 +5537,20 @@ x_cfile:
 x_tag_82:
 	fcb	$00	; unknown tag $82
 	fcb	$14,$35,$15,$63,$14,$ff,$39,$2d
-	fcb	$01,$2b,$3f,$00,$7a,$05,$54,$20
-	fcb	$52,$41,$4d,$33,$14,$44,$7b,$7a	; "RAM3.D{z"
-	fcb	$01,$2c                  	; ".,"
+	fcb	$01,$2b,$3f,$00,$7a
+	cstr	"T RAM"
+	fcb	$33,$14,$44,$7b,$7a
+	fcb	$01,$2c
 
 x_tag_177:
 	fcb	$00	; unknown tag $177
 	fcb	$0f,$13,$f2,$17,$4e,$05,$33,$14
-	fcb	$43,$7b,$7a,$02,$49,$4e,$0c,$c8	; "C{z.IN.."
+	fcb	$43,$7b,$7a
+	cstr	"IN"
+	fcb	$0c,$c8
 	fcb	$e7,$14,$37,$15,$13,$f5,$15,$3e
-	fcb	$01,$6c,$7a,$04,$46,$52,$45,$45	; ".lz.FREE"
+	fcb	$01,$6c,$7a
+	cstr	"FREE"
 
 x_tag_178:
 	fcb	$00	; unknown tag $178
@@ -5243,8 +5558,9 @@ x_tag_178:
 	fcb	$17,$1a,$4c,$0a,$14,$3b,$17,$50
 	fcb	$05,$33,$14,$43,$7b,$7a,$02,$45
 	fcb	$58,$0c,$c8,$e7,$18,$01,$81,$01
-	fcb	$16,$01,$6c,$7a,$0a,$46,$52,$45	; "..lz.FRE"
-	fcb	$45,$2c,$53,$4c,$4f,$54,$3d,$14	; "E,SLOT=."
+	fcb	$16,$01,$6c,$7a
+	cstr	"FREE,SLOT="
+	fcb	$14
 	fcb	$3b,$17,$11,$fd,$ff,$6c,$40,$5b
 	fcb	$76
 
@@ -5484,13 +5800,13 @@ Seb1f:	fcb	$00
 
 x_tag_18f:
 	fcb	$00	; unknown tag $18f
-	fcb	$7e,$7a,$0b,$53,$45,$4c,$45,$43	; "~z.SELEC"
-	fcb	$54,$20,$46,$49,$4c,$45      	; "T FILE"
+	fcb	$7e,$7a
+	cstr	"SELECT FILE"
 
 x_dot_no_room:
 	fcb	$00	; .NO-ROOM
-	fcb	$7e,$7a,$07,$4e,$4f,$20,$52,$4f	; "~z.NO RO"
-	fcb	$4f,$4d                  	; "OM"
+	fcb	$7e,$7a
+	cstr	"NO ROOM"
 
 x_file_tag:
 	fcb	$00	; FILE-TAG
@@ -5512,8 +5828,9 @@ x_dot_file:
 	fcb	$00	; .FILE
 	fcb	$33,$66,$13,$f3,$15,$1c,$01,$93
 	fcb	$4c,$08,$60,$30,$3d,$01,$91,$52
-	fcb	$0f,$4e,$0c,$7e,$7a,$08,$4e,$4f	; ".N.~z.NO"
-	fcb	$20,$46,$49,$4c,$45,$53,$33   	; " FILES3"
+	fcb	$0f,$4e,$0c,$7e,$7a
+	cstr	"NO FILES"
+	fcb	$33
 
 x_open_file:
 	fcb	$00	; OPEN-FILE
@@ -5526,9 +5843,9 @@ x_tag_196:
 
 x_query_enough_room:
 	fcb	$00	; ?ENOUGH-ROOM
-	fcb	$4e,$22,$77,$01,$90,$7a,$0d,$2c
-	fcb	$20,$44,$45,$4c,$45,$54,$45,$20	; " DELETE "
-	fcb	$46,$49,$4c,$45,$32,$11,$01,$96	; "FILE2..."
+	fcb	$4e,$22,$77,$01,$90,$7a
+	cstr	", DELETE FILE"
+	fcb	$32,$11,$01,$96
 	fcb	$11,$01,$92,$13,$f3,$16,$11,$01
 	fcb	$94,$83,$b5
 
@@ -5710,9 +6027,10 @@ x_tag_bd:
 x_tag_93:
 	fcb	$00	; unknown tag $93
 	fcb	$13,$ff,$15,$00,$b8,$4e,$1a,$77
-	fcb	$7e,$7a,$05,$4f,$4e,$4c,$59,$20	; "~z.ONLY "
-	fcb	$01,$81,$01,$6c,$7a,$0a,$42,$59	; "...lz.BY"
-	fcb	$54,$45,$53,$20,$4c,$45,$46,$54	; "TES LEFT"
+	fcb	$7e,$7a
+	cstr	"ONLY "
+	fcb	$01,$81,$01,$6c,$7a
+	cstr	"BYTES LEFT"
 	fcb	$00,$81,$01,$8c,$b5,$00,$1b,$28
 	fcb	$93,$34,$48,$39,$4c,$07,$0c,$7f
 	fcb	$ef,$0e,$52,$0b,$93,$88,$4c,$05
@@ -5724,8 +6042,9 @@ x_tag_93:
 	fcb	$17,$01,$3b,$4c,$05,$3d,$32,$52
 	fcb	$02,$38,$00,$0f,$0c,$84,$ef,$33
 	fcb	$12,$05,$18,$93,$23,$8c,$23,$7e
-	fcb	$7a,$0c,$53,$45,$41,$52,$43,$48	; "z.SEARCH"
-	fcb	$20,$46,$4f,$52,$3f,$20,$12,$56	; " FOR? .V"
+	fcb	$7a
+	cstr	"SEARCH FOR? "
+	fcb	$12,$56
 	fcb	$14,$0c,$33,$33,$11,$01,$97,$33
 	fcb	$bc,$0e,$12,$68,$18,$0f,$24,$13
 	fcb	$fd,$18,$24,$13,$ff,$16,$8c,$93
@@ -5734,9 +6053,9 @@ x_tag_93:
 	fcb	$33,$1c,$0c,$ab,$ef,$4c,$0e,$42
 	fcb	$13,$fe,$18,$13,$ff,$16,$0f,$32
 	fcb	$33,$32,$52,$04,$1b,$93,$48,$4d
-	fcb	$1a,$0f,$4e,$12,$77,$7e,$7a,$09
-	fcb	$4e,$4f,$54,$20,$46,$4f,$55,$4e	; "NOT FOUN"
-	fcb	$44,$33,$13,$fe,$18         	; "D3..."
+	fcb	$1a,$0f,$4e,$12,$77,$7e,$7a
+	cstr	"NOT FOUND"
+	fcb	$33,$13,$fe,$18
 
 x_edit_file:
 	fcb	$00	; EDIT-FILE
@@ -5762,9 +6081,9 @@ x_edit_file:
 	fcb	$0d,$0f,$33,$93,$88,$4a,$1b,$4c
 	fcb	$04,$0c,$9d,$ef,$bd,$0e,$24,$0c
 	fcb	$02,$ed,$81,$41,$17,$2b,$39,$4e
-	fcb	$12,$7e,$77,$7a,$0a,$43,$41,$4e	; ".~wz.CAN"
-	fcb	$27,$54,$20,$45,$44,$49,$54,$7e	; "'T EDIT~"
-	fcb	$7d,$b5,$53,$bf,$0e,$0f
+	fcb	$12,$7e,$77,$7a
+	cstr	"CAN'T EDIT"
+	fcb	$7e,$7d,$b5,$53,$bf,$0e,$0f
 
 x_tag_19c:
 	fcb	$00	; unknown tag $19c
@@ -5793,16 +6112,16 @@ x_copy_file:
 	fcb	$01,$8f,$30,$11,$01,$92,$13,$f3
 	fcb	$16,$11,$01,$9e,$11,$01,$94,$83
 	fcb	$13,$f2,$17,$13,$fb,$16,$81,$1b
-	fcb	$15,$7e,$7a,$16,$53,$45,$4c,$45	; ".~z.SELE"
-	fcb	$43,$54,$20,$44,$45,$53,$54,$49	; "CT DESTI"
-	fcb	$4e,$41,$54,$49,$4f,$4e,$20,$52	; "NATION R"
-	fcb	$41,$4d,$33,$13,$01,$16,$32,$13	; "AM3...2."
+	fcb	$15,$7e,$7a
+	cstr	"SELECT DESTINATION RAM"
+	fcb	$33,$13,$01,$16,$32,$13
 	fcb	$00,$18,$32,$11,$01,$9d,$11,$01
 	fcb	$9c,$83,$33,$13,$00,$18,$13,$f2
 	fcb	$17,$12,$02,$16,$01,$5e,$1b,$b8
 	fcb	$4c,$14,$1b,$01,$8e,$22,$01,$9f
-	fcb	$7a,$09,$43,$4f,$50,$59,$20,$44	; "z.COPY D"
-	fcb	$4f,$4e,$45,$52,$04,$0e,$01,$90	; "ONER...."
+	fcb	$7a
+	cstr	"COPY DONE"
+	fcb	$52,$04,$0e,$01,$90
 	fcb	$13,$fb,$15,$13,$f2,$18,$01,$5e
 
 x_do_edit:
@@ -5813,16 +6132,17 @@ x_do_edit:
 
 x_new_file:
 	fcb	$00	; NEW-FILE
-	fcb	$7e,$7a,$1a,$54,$59,$50,$45,$20	; "~z.TYPE "
-	fcb	$46,$49,$4c,$45,$20,$4e,$41,$4d	; "FILE NAM"
-	fcb	$45,$2c,$20,$54,$48,$45,$4e,$20	; "E, THEN "
-	fcb	$45,$4e,$54,$45,$52,$12,$06,$14	; "ENTER..."
-	fcb	$50,$33,$33,$11,$01,$97,$33,$bc	; "P33...3."
+	fcb	$7e,$7a
+	cstr	"TYPE FILE NAME, THEN ENTER"
+	fcb	$12,$06,$14
+	fcb	$50,$33,$33,$11,$01,$97,$33,$bc
 	fcb	$0e,$1a,$4c,$0d,$01,$8a,$8a,$2b
 	fcb	$81,$41,$18,$33,$01,$a1,$52,$02
-	fcb	$91,$53,$39,$00,$08,$4e,$45,$57	; ".S9..NEW"
-	fcb	$20,$46,$49,$4c,$45,$09,$43,$4f	; " FILE.CO"
-	fcb	$50,$59,$20,$46,$49,$4c,$45   	; "PY FILE"
+	fcb	$91,$53,$39,$00
+
+	cstr	"NEW FILE"
+
+	cstr	"COPY FILE"
 
 x_tag_1a3:
 	fcb	$00	; unknown tag $1a3
@@ -5839,8 +6159,16 @@ x_tag_1a4:
 
 x_tag_1a5:
 	fcb	$00	; unknown tag $1a5
-	fcb	$01,$53,$32,$11,$01,$a4,$11,$01
-	fcb	$a3,$83,$53,$08,$00,$30,$55,$56
+	tag	flame_on
+	tag	1
+Tf24d:	literal	$a401		; executer
+	literal	$a301		; selecter
+	tag	menu_driver
+	tagrr	p_again,Tf24d
+
+	fcb	$00
+
+	fcb	$30,$55,$56
 	fcb	$69,$5a,$3f,$a9,$04,$85,$5d,$86
 	fcb	$5c,$a0,$08,$a6,$5c,$18,$36,$07
 	fcb	$ca,$88,$d0,$fa,$c6,$5d,$d0,$f1
@@ -6107,9 +6435,9 @@ x_tag_99:
 	fcb	$14,$0a,$11,$f5,$ff,$01,$ad,$1c
 	fcb	$95,$1b,$11,$f6,$ff,$4a,$22,$2a
 	fcb	$4b,$3a,$30,$94,$32,$4b,$3a,$4c
-	fcb	$1a,$0f,$61,$7e,$7a,$0e,$2e,$2e
-	fcb	$2e,$52,$41,$4e,$47,$45,$20,$45	; ".RANGE E"
-	fcb	$52,$52,$4f,$52,$33,$12,$0c,$18	; "Rror3..."
+	fcb	$1a,$0f,$61,$7e,$7a
+	cstr	"...RANGE ERROR"
+	fcb	$33,$12,$0c,$18
 	fcb	$52,$0a,$01,$b0,$0f,$14,$67,$17
 	fcb	$12,$0e,$18,$00,$35,$35,$33,$6d
 	fcb	$0c,$27,$f7,$1b,$17,$22,$42,$0c
@@ -6198,7 +6526,12 @@ x_tag_1b6:
 
 x_tag_9c:
 	fcb	$00	; unknown tag $9c
-	fcb	$12,$06,$3d,$00,$2c,$9c
+	fcb	$12,$06,$3d
+
+
+Sfa49:	fcb	$00
+	fcb	$2c,$9c
+
 
 x_tag_9d:
 	fcb	$00	; unknown tag $9d
@@ -6237,9 +6570,14 @@ x_tag_a1:
 	fcb	$14,$1f,$51,$04,$33,$52,$05,$14
 	fcb	$1f,$3e,$32
 
+
 x_tag_104:
 	fcb	$00	; unknown tag $104
-	fcb	$a0,$68,$65,$00,$31,$a0,$1b,$1b
+	fcb	$a0,$68,$65
+	
+
+Lfacf:	fcb	$00
+	fcb	$31,$a0,$1b,$1b
 	fcb	$11,$6d,$01,$62,$22,$2f,$01,$2b
 	fcb	$3d,$42,$33,$a0,$1b,$32,$4b,$4c
 	fcb	$0b,$33,$54,$3b,$01,$b6,$3d,$57
@@ -6247,9 +6585,17 @@ x_tag_104:
 	fcb	$22,$2f,$6b,$28,$3e,$32,$a0,$3d
 	fcb	$68,$31,$ac,$30,$01,$04,$9a,$ac
 	fcb	$2f,$01,$04,$9b,$ac,$2e,$01,$04
-	fcb	$9b,$ac,$2d,$01,$04,$00,$0c,$62
-	fcb	$fa,$2c,$33,$54,$3b,$a1,$57,$00
+	fcb	$9b,$ac,$2d,$01,$04
+
+
+Sfb11:	fcb	$00
+	fcb	$0c,$62
+	fcb	$fa,$2c,$33,$54,$3b,$a1,$57
+
+
+Sfb1b:	fcb	$00
 	fcb	$36,$14,$39,$5a
+
 
 x_tag_a2:
 	fcb	$00	; unknown tag $a2
@@ -6258,21 +6604,23 @@ x_tag_a2:
 x_tag_105:
 	fcb	$00	; unknown tag $105
 	fcb	$14,$0a,$69,$5b,$1b,$4c,$04,$76
-	fcb	$52,$03,$7d,$0f,$5b,$76,$00,$15
-	fcb	$54,$55,$45,$57,$45,$44,$54,$48	; "TUEWEDTH"
-	fcb	$55,$46,$52,$49,$53,$41,$54,$53	; "UFRISATS"
-	fcb	$55,$4e,$4d,$4f,$4e,$00,$11,$10	; "UNMON..."
+	fcb	$52,$03,$7d,$0f,$5b,$76,$00
+
+	cstr	"TUEWEDTHUFRISATSUNMON"
+	fcb	$00
+
+	fcb	$11,$10
 	fcb	$0e,$6a,$20,$0f,$14,$18,$6a,$20
 	fcb	$0f,$2c,$6a,$0e,$30,$62,$42,$11
 	fcb	$38,$fb,$3d,$30,$78,$7d,$2f,$a0
 	fcb	$1a,$4e,$02,$9a,$01,$05,$14,$3a
 	fcb	$1b,$76,$2e,$a0,$a2,$76,$2d,$a0
-	fcb	$a2,$7d,$00,$24,$4a,$41,$4e,$46	; ".}.$JANF"
-	fcb	$45,$42,$4d,$41,$52,$41,$50,$52	; "EBMARAPR"
-	fcb	$4d,$41,$59,$4a,$55,$4e,$4a,$55	; "MAYJUNJU"
-	fcb	$4c,$41,$55,$47,$53,$45,$50,$4f	; "LAUGSEPO"
-	fcb	$43,$54,$4e,$4f,$56,$44,$45,$43	; "CTNOVDEC"
-	fcb	$00,$31,$a0,$14,$50,$3d,$14,$64
+	fcb	$a2,$7d,$00
+
+	cstr	"JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC"	
+	fcb	$00
+
+	fcb	$31,$a0,$14,$50,$3d,$14,$64
 	fcb	$6b
 
 x_s_dot_t:
@@ -6284,7 +6632,11 @@ x_s_dot_t:
 	fcb	$7d,$32,$a0,$42,$01,$05,$7d,$0c
 	fcb	$a1,$fb,$1b,$14,$50,$51,$07,$7a
 	fcb	$02,$32,$30,$52,$05,$7a,$02,$31
-	fcb	$39,$a2,$00,$7e,$7d,$7d,$0c,$4e
+	fcb	$39,$a2
+
+
+Sfbe5:	fcb	$00
+	fcb	$7e,$7d,$7d,$0c,$4e
 	fcb	$fb,$30,$a0,$4c,$05,$14,$50,$52
 	fcb	$03,$14,$41,$76,$14,$4d,$76,$7d
 	fcb	$33,$a0,$42,$01,$05,$14,$2f,$1b
@@ -6296,173 +6648,523 @@ x_tag_1b8:
 	asl	z07
 	ora	#$0a
 	fcb	$0c,$0d,$0f,$12,$13,$15,$16,$18
-	fcb	$19,$00,$9d,$17,$3d,$14,$0d,$6b
-	fcb	$1b,$9d,$18,$01,$b8,$b3,$00,$01
+	fcb	$19
+
+Sfc1f:	fcb	$00
+	fcb	$9d,$17,$3d,$14,$0d,$6b
+	fcb	$1b,$9d,$18,$01,$b8,$b3
+
+Sfc2c:	fcb	$00
+	fcb	$01
 	fcb	$1a,$1b,$14,$41,$48,$1c,$14,$50
 	fcb	$48,$3a,$9d,$17,$2d,$48,$39,$1c
 	fcb	$0c,$1b,$fb,$22,$35,$48,$3a,$9d
 	fcb	$17,$2d,$49,$39,$3a,$4c,$08,$76
 	fcb	$32,$0c,$1f,$fc,$52,$03,$0f,$77
 	fcb	$00,$01,$03,$14,$1e,$9e,$15,$01
-	fcb	$86,$4c,$02,$0f,$00,$34,$1b,$88
+	fcb	$86,$4c,$02,$0f
+
+
+Sfc62:	fcb	$00
+	fcb	$34,$1b,$88
 	fcb	$1a,$4c,$22,$33,$54,$3b,$9e,$16
 	fcb	$0c,$56,$fc,$9f,$5e,$01,$27,$57
 	fcb	$5d,$ad,$01,$26,$4e,$05,$14,$bf
 	fcb	$01,$09,$13,$e9,$41,$5f,$13,$e9
 	fcb	$01,$06,$52,$0c,$0e,$33,$13,$e9
-	fcb	$1b,$6e,$18,$14,$bf,$01,$09,$00
+	fcb	$1b,$6e,$18,$14,$bf,$01,$09
+
+
+Sfc95:	fcb	$00
 	fcb	$7e,$01,$03,$14,$1a,$78,$00,$0c
 	fcb	$56,$fc,$9f,$5e,$ad,$01,$26,$0c
 	fcb	$49,$fa,$17,$14,$32,$48,$3a,$1b
-	fcb	$4c,$04,$0c,$95,$fc,$00,$9e,$15
+	fcb	$4c,$04,$0c,$95,$fc
+
+
+Sfcb3:	fcb	$00
+	fcb	$9e,$15
 	fcb	$1b,$33,$4b,$4c,$04,$40,$52,$04
 	fcb	$77,$0f,$33,$9e,$16,$0c,$9c,$fc
-	fcb	$9e,$15,$28,$3a,$4d,$16,$00,$9e
+	fcb	$9e,$15,$28,$3a,$4d,$16
+
+
+Sfccc:	fcb	$00
+	fcb	$9e
 	fcb	$15,$1b,$88,$40,$51,$0e,$42,$9e
 	fcb	$16,$0c,$9c,$fc,$9e,$15,$88,$4b
-	fcb	$3a,$52,$03,$77,$42,$4d,$16,$00
-	fcb	$0c,$49,$fa,$18,$14,$83,$0c,$f1
-	fcb	$e1,$88,$9e,$16,$88,$4c,$42,$4f
-	fcb	$81,$06,$7e,$01,$b7,$52,$35,$4f
-	fcb	$82,$06,$0c,$95,$fc,$52,$2d,$4f
-	fcb	$80,$06,$0c,$cc,$fc,$52,$25,$4f
-	fcb	$83,$06,$0c,$b3,$fc,$52,$1d,$4f
-	fcb	$85,$19,$7f,$7a,$07,$44,$45,$4c	; "...z.DEL"
-	fcb	$45,$54,$45,$44,$9e,$15,$1b,$01	; "ETED...."
-	fcb	$8d,$0f,$0c,$62,$fc,$40,$9e,$16
-	fcb	$52,$02,$77,$0f,$75,$33,$52,$0d
-	fcb	$7e,$7a,$09,$4e,$4f,$20,$41,$4c	; "~z.NO AL"
-	fcb	$41,$52,$4d,$53,$4d,$50      	; "ARMSMP"
+	fcb	$3a,$52,$03,$77,$42,$4d,$16
+
+
+Sfce5:	fcb	$00
+	tag	p_call
+	fdb	Sfa49
+	tag	c_bang
+	literal	$83
+	tag	p_call
+	fdb	Se1f1
+	tag	rec_cnt
+	tag	tag_9e
+	tag	bang
+	tag	rec_cnt
+tfcf3:	tagrf	p_if,tfd36
+	tag	p_if_its
+	fcb	$81
+	frel	tfcfd
+	tag	cr
+	tag	s_dot_t
+	tagrf	p_else,tfd31
+tfcfd:	tag	p_if_its
+	fcb	$82
+	frel	tfd05
+	tag	p_call
+	fdb	Sfc95
+	tagrf	p_else,tfd31
+tfd05:	tag	p_if_its
+	fcb	$80
+	frel	tfd0d
+	tag	p_call
+	fdb	Sfccc
+	tagrf	p_else,tfd31
+tfd0d:	tag	p_if_its
+	fcb	$83
+	frel	tfd15
+	tag	p_call
+	fdb	Sfcb3
+	tagrf	p_else,tfd31
+tfd15:	tag	p_if_its
+	fcb	$85
+	frel	tfd30
+	tag	fast_cr
+	tag	p_dot_quote
+	cstr	"DELETED"
+	tag	tag_9e
+	tag	at
+	tag	dup
+	tag	delete
+	tag	drop
+	tag	p_call
+	fdb	Sfc62
+	tag	1_minus
+	tag	tag_9e
+	tag	bang
+	tagrf	p_else,tfd31
+tfd30:	tag	beep
+tfd31:	tag	drop
+	tag	key
+	tag	0
+	tagrf	p_else,tfd42
+tfd36:	tag	cr
+	tag	p_dot_quote
+	cstr	"NO ALARMS"
+tfd42:	tagrr	p_until,tfcf3
+
 
 x_tag_a3:
 	fcb	$00	; unknown tag $a3
-	fcb	$1b,$6d,$17,$0c,$1b,$fb,$62,$b4
-	fcb	$22,$42,$6d,$17,$0c,$1b,$fb,$4c
-	fcb	$09,$b4,$22,$14,$0a,$62,$3d,$52
-	fcb	$02,$0f,$00,$2d,$a3,$9a,$6b,$2f
-	fcb	$a1,$2a,$a3,$2e,$a1,$9a,$a3,$2d
-	fcb	$a1,$14,$0f,$6d,$17,$14,$50,$48
-	fcb	$30,$a1,$14,$12,$a3,$40,$33,$a1
-	fcb	$14,$15,$a3,$40,$32,$a1,$14,$18
-	fcb	$a3,$14,$14,$3d,$14,$64,$6b,$31
-	fcb	$a1,$0c,$cf,$fa
+	tag	dup
+	tag	charbuf
+	tag	c_at
+	tag	p_call
+	fdb	Sfb1b
+	tag	times
+	tag	ascii_to_bin
+	tag	swap
+	tag	1_plus
+	tag	charbuf
+	tag	c_at
+	tag	p_call
+	fdb	Sfb1b
+	tagrf	p_if,tfd5e
+	tag	ascii_to_bin
+	tag	swap
+	literal	10
+	tag	times
+	tag	plus
+	tagrf	p_else,tfd5f
+tfd5e:	tag	drop
+tfd5f:
+
+
+Sfd5f:	fcb	$00
+	tag	6
+	tag	tag_a3
+	tag	tag_9a
+	tag	mod
+	tag	4
+	tag	tag_a1
+	tag	9
+	tag	tag_a3
+	tag	5
+	tag	tag_a1
+	tag	tag_9a
+	tag	tag_a3
+	tag	6
+	tag	tag_a1
+	literal	15
+	tag	charbuf
+	tag	c_at
+	literal	'P'
+	tag	equal_to
+	tag	3
+	tag	tag_a1
+	literal	18
+	tag	tag_a3
+	tag	1_minus
+	tag	0
+	tag	tag_a1
+	literal	21
+	tag	tag_a3
+	tag	1_minus
+	tag	1
+	tag	tag_a1
+	literal	24
+
+Lfd85:	tag	tag_a3
+	literal	$14
+	tag	plus
+	literal	$64
+	tag	mod
+	tag	2
+	tag	tag_a1
+	tag	p_call
+	fdb	Lfacf
+
 
 x_e_dot_t:
 	fcb	$00	; E.T
-	fcb	$ad,$5d,$0c,$11,$fb,$0c,$e5,$fb
-	fcb	$2d,$b3,$33,$9d,$18,$75,$4f,$81
-	fcb	$07,$34,$0c,$1f,$fc,$52,$13,$4f
-	fcb	$82,$07,$32,$0c,$1f,$fc,$52,$0a
-	fcb	$4f,$0d,$03,$52,$05,$1b,$0c,$2c
-	fcb	$fc,$14,$0d,$48,$4d,$1f,$0c,$5f
-	fcb	$fd,$9f,$5f
+	tag	get_local
+	tag	2dup
+	tag	p_call
+	fdb	Sfb11
+	tag	p_call
+	fdb	Sfbe5
+	tag	6
+	tag	smart_posn
+	tag	0
+	tag	tag_9d
+	tag	c_bang
+	tag	key
+tfda0:	tag	p_if_its
+	fcb	$81
+	frel	tfda9
+	tag	minus_1
+	tag	p_call
+	fdb	Sfc1f
+	tagrf	p_else,tfdbb
+tfda9:	tag	p_if_its
+	fcb	$82
+	frel	tfdb2
+	tag	1
+	tag	p_call
+	fdb	Sfc1f
+	tagrf	p_else,tfdbb
+tfdb2:	tag	p_if_its
+	fcb	$0d
+	frel	tfdb7
+	tagrf	p_else,tfdbb
+tfdb7:	tag	dup
+	tag	p_call
+	fdb	Sfc2c
+tfdbb:	literal	$0d
+	tag	equal_to
+	tagrr	p_until,tfda0
+	tag	p_call
+	fdb	Sfd5f
+	tag	tag_9f
+	tag	2bang
+
 
 x_set_time:
 	fcb	$00	; STM
-	fcb	$01,$b9,$9f,$5e,$11,$7f,$7f,$11
-	fcb	$fc,$58,$16,$12,$79,$5f,$14,$10
-	fcb	$11,$fb,$58,$18,$33,$11,$fc,$58
-	fcb	$16,$00,$7a,$0c,$2c,$20,$54,$59	; "..z., TY"
-	fcb	$50,$45,$20,$45,$4e,$54,$45,$52	; "PE ENTER"
-	fcb	$01,$b9,$7f,$7a,$08,$4d,$45,$53	; "...z.MES"
-	fcb	$53,$41,$47,$45,$3a,$01,$03,$14	; "SAGE:..."
-	fcb	$1a,$5d,$01,$33,$33,$33,$11,$01
-	fcb	$97,$33,$bc,$61,$11,$65,$e6,$14
-	fcb	$22,$16,$01,$03,$14,$1e,$88,$89
-	fcb	$8a,$0c,$62,$fc
+	tag	e_dot_t
+	tag	tag_9f
+	tag	2at
+	literal	$7f7f
+	literal	d58fc
+	tag	bang
+	literal	d0379
+	tag	2bang
+	literal	$10
+	literal	d58fb
+	tag	c_bang
+	tag	0
+	literal	d58fc
+	tag	bang
+
+
+Sfddf:	fcb	$00
+	tag	p_dot_quote
+	cstr	", TYPE ENTER"
+	tag	e_dot_t
+	tag	fast_cr
+	tag	p_dot_quote
+	cstr	"MESSAGE:"
+	tag	tag_103
+	literal	$1a
+	tag	2dup
+	tag	blanks
+	tag	0
+	tag	0
+	literal	$9701
+	tag	0
+	tag	expect
+	tag	fdrop
+	literal	De665
+	literal	z22
+	tag	bang
+	tag	tag_103
+	literal	$1e
+	tag	rec_cnt
+	tag	insert
+	tag	query_enough_room
+	tag	p_call
+	fdb	Sfc62
+
 
 x_show_time:
 	fcb	$00	; SHOW.TIME
-	fcb	$14,$3d,$2d,$9c,$18,$13,$df,$23
-	fcb	$2d,$a0,$1b,$9b,$51,$07,$14,$0a
-	fcb	$b3,$a2,$52,$0a,$0f,$ad,$5d,$9f
-	fcb	$5f,$25,$5f,$01,$b7,$25,$5e,$32
-	fcb	$33,$65,$25,$5f,$13,$dd,$01,$06
-	fcb	$32,$2d,$9c,$1e,$13,$dd,$0a,$12
-	fcb	$79,$17,$13,$0f,$17,$3e,$2e,$4b
-	fcb	$4d,$30,$24,$0f,$53,$3c
+	fcb	$14	; ??? literal, value is next two tags
+tfe1c:	tag	plus
+	tag	6
+	tag	tag_9c
+	tag	c_bang
+	literal	d02df
+	tag	to_r
+	tag	6
+tfe24:	tag	tag_a0
+	tag	dup
+	tag	tag_9b
+	tagrf	p_less_if,tfe2f
+	literal	$0a
+	tag	smart_posn
+	tag	tag_a2
+	tagrf	p_else,tfe38
+tfe2f:	tag	drop
+	tag	get_local
+	tag	2dup
+	tag	tag_9f
+	tag	2bang
+	tag	r
+	tag	2bang
+	tag	s_dot_t
+tfe38:	tag	r
+	tag	2at
+	tag	1
+	tag	0
+	tag	d_plus
+	tag	r
+	tag	2bang
+	literal	D02dd
+	tag	set_timer
+	tag	1
+	tag	6
+	tag	tag_9c
+	tag	plus_c_bang
+	literal	d02dd
+	tag	wait
+	literal	d0379
+	tag	c_at
+	literal	vtime+1
+	tag	c_at
+	tag	minus
+	tag	5
+	tag	greater_than
+	tagrr	p_until,tfe24
+	tag	r_to
+	tag	drop
+	tagrr	p_again,tfe1c
+
 
 x_tag_1bc:
 	fcb	$00	; unknown tag $1bc
-	fcb	$4f,$00,$04,$0c,$df,$fd,$4f,$01
-	fcb	$06,$14,$32,$0c,$e5,$fc,$4f,$02
-	fcb	$06,$14,$33,$0c,$e5,$fc,$4f,$03
-	fcb	$03,$01,$bb,$4f,$04,$03,$01,$ba
-	fcb	$0f,$33,$00,$09,$53,$45,$54,$20	; ".3..SET "
-	fcb	$41,$4c,$41,$52,$4d,$06,$52,$45	; "ALARM.RE"
-	fcb	$56,$49,$45,$57,$0b,$41,$43,$4b	; "VIEW.ACK"
-	fcb	$4e,$4f,$57,$4c,$45,$44,$47,$45	; "NOWLEDGE"
-	fcb	$04,$54,$49,$4d,$45,$08,$53,$45	; ".TIME.SE"
-	fcb	$54,$20,$54,$49,$4d,$45      	; "T TIME"
+	tag	p_if_its
+	fcb	$00
+	frel	tfe60
+	tag	p_call
+	fdb	Sfddf
+tfe60:	tag	p_if_its
+	fcb	$01
+	frel	tfe68
+	literal	z32
+	tag	p_call
+	fdb	Sfce5
+tfe68:	tag	p_if_its
+	fcb	$02
+	frel	tfe70
+	literal	z33
+	tag	p_call
+	fdb	Sfce5
+tfe70:	tag	p_if_its
+	fcb	$03
+	frel	tfe75
+	tag	show_time
+tfe75:	tag	p_if_its
+	fcb	$04
+	frel	tfe7a
+	tag	set_time
+tfe7a:	tag	drop
+	tag	0
+
+	fcb	$00
+
+
+Dfe7d:	cstr	"SET ALARM"
+	cstr	"REVIEW"
+	cstr	"ACKNOWLEDGE"
+	cstr	"TIME"
+	cstr	"SET TIME"
+
 
 x_tag_1bd:
 	fcb	$00	; unknown tag $1bd
-	fcb	$11,$7d,$fe,$01,$7c,$78
+	literal	Dfe7d
+	tag	at_sa
+	tag	type
+
 
 x_tag_1be:
 	fcb	$00	; unknown tag $1be
-	fcb	$2e,$51,$07,$11,$01,$bd,$32,$52
-	fcb	$02,$33,$00,$01,$ff
+	tag	5
+	tagrf	p_less_if,tfeb9
+	literal	$bd01
+	tag	1
+	tagrf	p_else,tfeba
+tfeb9:	tag	0
+tfeba:
+	fcb	$00
+
+
+Dfebb:	fcb	$01,$ff
+
 
 x_tag_1bf:
 	fcb	$00	; unknown tag $1bf
-	fcb	$01,$53,$11,$bb,$fe,$79,$5d,$01
-	fcb	$8b,$4c,$04,$0e,$52,$09,$01,$8a
-	fcb	$4c,$05,$2a,$81,$41,$18,$32,$11
-	fcb	$01,$bc,$11,$01,$be,$83,$53,$08
-Lfede:	fcb	$00
-	fcb	$7a,$07,$52,$45,$53,$54,$41,$52	; "z.RESTAR"
-	fcb	$54,$75,$01,$57            	; "Tu.W"
+	tag	flame_on
+	literal	Dfebb
+	tag	count
+	tag	2dup
+	tag	open
+	tagrf	p_if,tfecc
+	tag	2drop
+	tagrf	p_else,Tfed4
+Tfecc:	tag	make
+	tagrf	p_if,Tfed4
+	tag	9
+	tag	cfile
+	tag	2_plus
+	tag	c_bang
+Tfed4:	tag	1
+Tfed5:	literal	$bc01		; executer
+	literal	$be01		; selecter
+	tag	menu_driver
+	tagrr	p_again,Tfed5
 
-x_intap:
-	jsr	Sffee	; INTAP
+
+Lfede:	fcb	$00
+	tag	p_dot_quote
+	cstr	"RESTART"
+	tag	key
+	tag	hard_clr
+
+
+x_intaps:
+	jsr	Sffee	; INTAPS
 
 	fcb	$01,$b5,$01,$bf,$01,$a5,$01,$ca
 
+
+; main manu executer
 x_tag_1c1:
 	fcb	$00	; unknown tag $1c1
-	fcb	$33,$30,$5a,$4c,$05,$01,$c0,$01
-	fcb	$2c,$30,$3e,$01,$73,$4c,$09,$4c
-	fcb	$05,$01,$3a,$52,$03,$01,$39,$32
-	fcb	$00,$0a,$43,$41,$4c,$43,$55,$4c	; "..CALCUL"
-	fcb	$41,$54,$4f,$52,$10,$43,$4c,$4f	; "ATOR.CLO"
-	fcb	$43,$4b,$2f,$43,$4f,$4e,$54,$52	; "CK/CONTR"
-	fcb	$4f,$4c,$4c,$45,$52,$0b,$46,$49	; "OLLER.FI"
-	fcb	$4c,$45,$20,$53,$59,$53,$54,$45	; "LE SYSTE"
-	fcb	$4d,$11,$52,$55,$4e,$20,$53,$4e	; "M.RUN SN"
-	fcb	$41,$50,$20,$50,$52,$4f,$47,$52	; "AP PROGR"
-	fcb	$41,$4d,$53               	; "AMS"
+	tag	0
+	tag	3
+	tag	query_range
+	tag	p_if
+	fcb	$05
+	tag	intaps
+	tag	flee
+	tag	3
+	tag	minus
+	tag	loc_prg
+	tag	p_if
+	fcb	$09
+	tag	p_if
+	fcb	$05
+	tag	flee_crom
+	tag	p_else
+	fcb	$03
+	tag	flee_cap
+	tag	1
+	fcb	$00
+
+
+Dff10:	cstr	"CALCULATOR"
+	cstr	"CLOCK/CONTROLLER"
+	cstr	"FILE SYSTEM"
+	cstr	"RUN SNAP PROGRAMS"
 
 x_tag_1c2:
 	fcb	$00	; unknown tag $1c2
-	fcb	$11,$10,$ff,$01,$7c,$78
+	literal	Dff10
+	tag	at_sa
+	tag	type
+
 
 x_tag_1c3:
 	fcb	$00	; unknown tag $1c3
-	fcb	$4c,$09,$0f,$11,$28,$20,$79,$3d
-	fcb	$52,$04,$11,$2c,$40,$79,$01,$7d
+	tagrf	p_if,tff5c
+	tag	drop
+	literal	ctrid
+	tag	count
+	tag	plus
+	tagrf	p_else,tff5f
+tff5c:	literal	romid
+tff5f:	tag	count
+	tag	typedrop
 
+
+; main menu selecter
 x_tag_1c4:
 	fcb	$00	; unknown tag $1c4
-	fcb	$33,$30,$5a,$4c,$08,$0f,$11,$01
-	fcb	$c2,$32,$52,$0c,$30,$3e,$01,$73
-	fcb	$1b,$4c,$05,$11,$01,$c3,$22
+	tag	0
+	tag	3
+	tag	query_range
+	tagrf	p_if,tff6f
+	tag	drop
+	literal	$c201
+	tag	1
+	tagrf	p_else,tff7a
+tff6f:	tag	3
+	tag	minus
+	tag	loc_prg
+	tag	dup
+	tagrf	p_if,tff7a
+	literal	$c301
+	tag	swap
+tff7a:
+
 
 x_tag_1c5:
 	fcb	$00	; unknown tag $1c5
-	fcb	$32,$13,$16,$18			; 1 $16 C!
-	fcb	$33,$b8,$8a,$32			; 0 ?ROOM ?ENOU 1
-	fcb	$11,$01,$c1			; $c101
-	fcb	$11,$01,$c4			; $c401
-	fcb	$83,$53,$08			; MENU- (AGAI
+	tag	1		; 1 d0216 C!
+	literal	d0216
+	tag	c_bang
+	tag	0
+	tag	query_room	; ?ROOM ?ENOUGH-ROOM 1
+	tag	query_enough_room
+	tag	1
+tff83:	literal	$c101		; BEGIN tag 1c1 ; executer
+	literal	$c401		; tag 1c4   	; selecter
+	tag	menu_driver	; MENU-DRIVER REPEAT
+	tagrr	p_again,tff83
+
 
 	fcb	$00,$00,$00,$00,$00,$00,$00
 	fcb	$00,$00,$00,$00,$00,$00,$00,$00
 	fcb	$00,$00,$00,$00,$00
 
-	fcb	$14
-
-	fcb	"THE REST IS SILENCE "
+	cstr	"THE REST IS SILENCE " ; Alas, poor Hamlet!
 
 	fcb	$00,$00,$00
 
@@ -6476,23 +7178,23 @@ x_tag_1c5:
 	fdb	x_drop
 	fdb	Lcd64
 
-	jmp	Sd0fb
-	jmp	Sd107
-	jmp	Sc70f
-	jmp	Sd4b1
-	jmp	Scd0d
-	jmp	Sc361
-	jmp	Le123
-	jmp	Le15c
-	jmp	Le174
-	jmp	Le170
-	jmp	Le195
-Sffeb:	jmp	Le1a5
-Sffee:	jmp	Le1b5
-	jmp	Lc395
-	jmp	Se0d6
-	jmp	Scbd2
+x_scomp		jmp	scomp
+x_ucomp:	jmp	ucomp
+x_sleep:	jmp	sleep
+x_setup:	jmp	setup
+x_dodoes:	jmp	dodoes
+x_dolatch:	jmp	dolatch
+		jmp	Le123
+		jmp	Le15c
+		jmp	Le174
+		jmp	Le170
+		jmp	Le195
+Sffeb:		jmp	Le1a5
+Sffee:		jmp	Le1b5
+v_getmem:	jmp	getmem
+v_getmemt:	jmp	getmemt
+v_postecb:	jmp	postecb
 
-	fdb	jnmi
-	fdb	reset
-	fdb	jirq
+		fdb	jnmi
+		fdb	reset
+		fdb	jirq
