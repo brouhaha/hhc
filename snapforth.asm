@@ -152,43 +152,43 @@ tag_table_8:
 	def_tag	tag_82b
 	def_tag	tag_82c
 
-	def_tag	tag_82d		; 'V
+	def_tag	quote_v		; 'V
 	def_tag	tag_82e
-	def_tag	tag_82f		; H>T
-	def_tag	tag_830		; T>H
-	def_tag	tag_831		; %VAR
-	def_tag	tag_832		; ((
-	def_tag	tag_833		; +TO
-	def_tag	tag_834		; FROM
-	def_tag	tag_835		; ))
+	def_tag	h_to_t		; H>T
+	def_tag	t_to_h		; T>H
+	def_tag	pct_var		; %VAR
+	def_tag	lp_lp		; ((
+	def_tag	plus_to		; +TO
+	def_tag	from		; FROM
+	def_tag	rp_rp		; ))
 	def_tag	tag_836
-	def_tag	tag_837		; U>
-	def_tag	tag_838		; 0>
-	def_tag	tag_839		; UMIN
-	def_tag	tag_83a		; UMAX
-	def_tag	tag_83b		; D.
-	def_tag	tag_83c		; U.
-	def_tag	tag_83d		; B.
-	def_tag	tag_83e		; H.
-	def_tag	tag_83f		; DECIMAL
-	def_tag	tag_840		; G.
-	def_tag	tag_841		; SEMIT
-	def_tag	tag_842		; STYPE
-	def_tag	tag_843		; SP!
-	def_tag	tag_844		; ?S
-	def_tag	tag_845		; .S
-	def_tag	tag_846		; ?
-	def_tag	tag_847		; C?
-	def_tag	tag_848		; DUMP
-	def_tag	tag_849		; HERE
+	def_tag	u_gt		; U>
+	def_tag	0_gt		; 0>
+	def_tag	umin		; UMIN
+	def_tag	umax		; UMAX
+	def_tag	d_dot		; D.
+	def_tag	u_dot		; U.
+	def_tag	b_dot		; B.
+	def_tag	h_dot		; H.
+	def_tag	decimal		; DECIMAL
+	def_tag	g_dot		; G.
+	def_tag	semit		; SEMIT
+	def_tag	stype		; STYPE
+	def_tag	sp_bang		; SP!
+	def_tag	query_s		; ?S
+	def_tag	dot_s		; .S
+	def_tag	query		; ?
+	def_tag	c_query		; C?
+	def_tag	dump		; DUMP
+	def_tag	here		; HERE
 	def_tag	tag_84a		; -WORD
 	def_tag	tag_84b
 	def_tag	tag_84c
-	def_tag	tag_84d		; ?PAIRS
-	def_tag	tag_84e		; !CSP
-	def_tag	tag_84f		; ?CSP
-	def_tag	tag_850		; ?COMP
-	def_tag	tag_851		; ?EXEC
+	def_tag	query_pairs	; ?PAIRS
+	def_tag	bang_csp	; !CSP
+	def_tag	query_csp	; ?CSP
+	def_tag	query_comp	; ?COMP
+	def_tag	query_exec	; ?EXEC
 	def_tag	tag_852		; ALLOT
 	def_tag	tag_853
 	def_tag	tag_854		; ,F
@@ -218,11 +218,11 @@ tag_table_8:
 	def_tag	tag_86c		; NFA
 	def_tag	tag_86d		; LFA
 	def_tag	tag_86e		; LATEST
-	def_tag	tag_86f		; HEX
-	def_tag	tag_870		; OCTAL
-	def_tag	tag_871		; CONVERT
+	def_tag	hex		; HEX
+	def_tag	octal		; OCTAL
+	def_tag	convert		; CONVERT
 	def_tag	tag_872
-	def_tag	tag_873		; NUMBER
+	def_tag	number		; NUMBER
 	def_tag	tag_874		; DCONVERT
 	def_tag	tag_875		; FCONVERT
 	def_tag	tag_876		; S"
@@ -272,8 +272,7 @@ tag_table_8:
 	def_tag	tag_8a2
 	def_tag	tag_8a3
 
-; $417e
-	fcb	$a9,$02
+L417e:	fcb	$a9,$02
 	fcb	$20,$d3,$ff,$86,$62,$b1,$44,$8d
 	fcb	$e8,$03,$a8,$b1,$44,$c9,$61,$90
 	fcb	$08,$c9,$7b,$b0,$04,$e9,$1f,$91
@@ -322,7 +321,7 @@ x_execto:
 x_ur_at:
 	fcb	$00
 	literal	D03a0		; D03a0
-	ntag	$15		; @
+	tag	at		; @
 	fcb	$00
 
 ; DP (SnapFORTH capsule dictionary variable)
@@ -569,18 +568,18 @@ x_tag_82e:
 	fcb	$39                     	; "9"
 
 ; H>T
-x_tag_82f:
+x_h_to_t:
 	fcb	$00
 	fcb	$08,$1b,$3d               	; "..="
 
 ; T>H
-x_tag_830:
+x_t_to_h:
 	fcb	$00
 	fcb	$08,$1b,$3e,$00            	; "..>."
 
 ; %VAR
 ; Returns state of "TO" variables, 0 = FROM, 1 = TO, -1 = +TO
-x_tag_831:
+x_pct_var:
 	LDA	tostate
 	PHA
 	BPL	L44ab
@@ -589,21 +588,21 @@ L44ab:	TYA
 	JMP	(Xffc8)
 
 ; ((
-x_tag_832:
+x_lp_lp:
 	PHA
 	LDA	tostate
 	PHA
 	fcb	$24	; bit zero-page opcode to skip one byte
 
 ; +TO
-x_tag_833:
+x_plus_to:
 	DEY
-x_tag_834:
+x_from:
 	STY	tostate
 	JMP	L09
 
 ; ))
-x_tag_835:
+x_rp_rp:
 	PLA
 	STA	tostate
 	PLA
@@ -630,19 +629,19 @@ x_tag_836:
 L44e8:	JMP	(Xffba)
 
 ; U>
-x_tag_837:
+x_u_gt:
 	fcb	$00
 	ntag	$22			; SWAP
 	ntag	$117			; U<
 
 ; 0>
-x_tag_838:
+x_0_gt:
 	fcb	$00
 	ntag	$33			; 0
 	ntag	$4b			; >
 
 ; UMIN
-x_tag_839:
+x_umin:
 	fcb	$00
 	ntag	$5d			; 2DUP
 	ntag	$837			; [ SWAP U< ]
@@ -651,7 +650,7 @@ x_tag_839:
 R44F9:	ntag	$0f			; DROP
 
 ; UMAX
-x_tag_83a:
+x_umax:
 	fcb	$00
 	ntag	$5d			; 2DUP
 	ntag	$117			; U<
@@ -660,14 +659,14 @@ x_tag_83a:
 R4501:	ntag	$0f			; DROP
 
 ; D.
-x_tag_83b:
+x_d_dot:
 	fcb	$00
 	ntag	$33			; '0'
 	ntag	$16a			; D.R
 	ntag	$7d			; SPACE
 
 ; U.
-x_tag_83c:
+x_u_dot:
 	fcb	$00
 	fcb	$33			; '0'
 	ntag	$83b
@@ -684,14 +683,14 @@ T450b:
 	ntag	$76			; ENIT
 
 ; B.
-x_tag_83d:
+x_b_dot:
 	fcb	$00
 	ntag	$0c			; (CALL)
 	fdb	T450b			; T450b
 	ntag	$7d			; SPACE
 
 ; H.
-x_tag_83e:
+x_h_dot:
 	fcb	$00
 	ntag	$1b			; DUP
 	ntag	$3c			; FLIP
@@ -700,7 +699,7 @@ x_tag_83e:
 	ntag	$83d			; ?
 
 ; G.
-x_tag_840:
+x_g_dot:
 	fcb	$00
 	fcb	$14,$0c,$11,$00,$fb,$01,$ad,$1c	; "........"
 	fcb	$95,$1b,$23,$42,$14,$0b,$08,$37	; "..#B...7"
@@ -711,28 +710,28 @@ x_tag_840:
 	fcb	$16,$24,$0e               	; ".$."
 
 ; SEMIT
-x_tag_841:
+x_semit:
 	fcb	$00
 	fcb	$14,$7f,$39,$1b,$35,$51,$04,$0f	; "..9.5Q.."
 	fcb	$14,$2e,$76               	; "..v"
 
 ; STYPE
-x_tag_842:
+x_stype:
 	fcb	$00
 	fcb	$a9,$59,$06,$3b,$17,$08,$41,$57	; ".Y.;..AW"
 
 ; SP!
-x_tag_843:
+x_sp_bang:
 	fcb	$00
 	fcb	$14,$ff,$01,$0c            	; "...."
 
 ; ?S
-x_tag_844:
+x_query_s:
 	fcb	$00
 	fcb	$1f,$14,$ff,$22,$3e,$01,$12   	; "...">.."
 
 ; .S
-x_tag_845:
+x_dot_s:
 	fcb	$00
 	fcb	$7d,$08,$44,$1a,$4c,$0b,$33,$22	; "}.D.L.3""
 	fcb	$54,$3b,$1d,$08,$3c,$34,$56,$00	; "T;..<4V."
@@ -740,17 +739,17 @@ x_tag_845:
 	cstr	"EMPTY"
 
 ; ?
-x_tag_846:
+x_query:
 	fcb	$00
 	fcb	$15,$01,$6c               	; "..l"
 
 ; C?
-x_tag_847:
+x_c_query:
 	fcb	$00
 	fcb	$17,$01,$6c               	; "..l"
 
 ; DUMP
-x_tag_848:
+x_dump:
 	fcb	$00
 	fcb	$33,$23,$7e,$1b,$5d,$08,$3e,$7d	; "3#~.].>}"
 	fcb	$2f,$a9,$54,$3b,$17,$08,$3d,$57	; "/.T;..=W"
@@ -764,7 +763,7 @@ x_tag_848:
 	fcb	$0f,$2f,$3d,$53,$49         	; "./=SI"
 
 ; HERE
-x_tag_849:
+x_here:
 	fcb	$00
 	fcb	$08,$34,$08,$0b            	; ".4.."
 
@@ -792,31 +791,34 @@ x_tag_84c:
 	cstr	"SYSTEM ERROR"
 
 ; ?PAIRS
-x_tag_84d:
+x_query_pairs:
 	fcb	$00
 	fcb	$48,$08,$4c
 	cstr	"ILLEGAL CONSTRUCTION"
 
 ; !CSP
-x_tag_84e:
+x_bang_csp:
 	fcb	$00
 	fcb	$1f,$08,$08,$08,$15         	; "....."
 
 ; ?CSP
-x_tag_84f:
+x_query_csp:
 	fcb	$00
 	fcb	$1f,$08,$15,$08,$4d         	; "....M"
 
 ; ?COMP
-x_tag_850:
+x_query_comp:
 	fcb	$00
-	fcb	$08,$14,$08,$4c
+	tag	state
+	ntag	$84c
 	cstr	"CAN'T EXECUTE"
 
 ; ?EXEC
-x_tag_851:
+x_query_exec:
 	fcb	$00
-	fcb	$08,$14,$28,$08,$4c
+	tag	state
+	tag	not
+	ntag	$84c
 	cstr	"CAN'T COMPILE"
 
 ; null character
@@ -1183,17 +1185,17 @@ x_tag_86b:
 	fcb	$00,$08,$6e               	; "..n"
 
 ; HEX
-x_tag_86f:
+x_hex:
 	fcb	$00
 	fcb	$14,$10,$14,$25,$18         	; "...%."
 
 ; DECIMAL
-x_tag_83f:
+x_decimal:
 	fcb	$00
 	fcb	$14,$0a,$14,$25,$18         	; "...%."
 
 ; OCTAL
-x_tag_870:
+x_octal:
 	fcb	$00
 	fcb	$2b,$14,$25,$18            	; "+.%."
 
@@ -1228,12 +1230,12 @@ x_p_number:
 	fcb	$08,$22,$47,$24,$48         	; "."G$H"
 
 ; NUMBER
-x_tag_873:
+x_number:
 	fcb	$00
 	fcb	$0c,$4a,$4d,$08,$61         	; ".JM.a"
 
 ; CONVERT
-x_tag_871:
+x_convert:
 	fcb	$00
 	fcb	$08,$72,$0f,$40,$60         	; ".r.@`"
 
@@ -1546,7 +1548,7 @@ L51bf:	fcb	$00
 	fcb	$08,$08,$08,$0e            	; "...."
 
 ; 'V
-x_tag_82d:
+x_quote_v:
 	fcb	$00
 	fcb	$08,$62,$08,$78,$08,$69      	; ".b.x.i"
 
@@ -1853,7 +1855,9 @@ T5527:	fcb	$00,$0c,$dc,$54
 	fcb	$01,$0c,$14,$55,$33,$81,$41,$18	; "...U3.A."
 	fcb	$0f,$81,$01,$7e,$48,$4e,$0b,$0c	; "...~HN.."
 	fcb	$dc,$54,$1c,$4e,$05,$11,$2a,$01	; ".T.N..*."
-	fcb	$3d,$1c,$08,$04,$11,$7e,$41,$12	; "=....~A."
+	fcb	$3d,$1c,$08,$04,$11
+	fdb	L417e
+	fcb	$12
 	fcb	$a6,$11,$1b,$01,$01,$2e,$1b,$12	; "........"
 	fcb	$9c,$16,$1b,$30,$3d,$79,$3d,$30	; "...0=y=0"
 	fcb	$3d,$12,$a0,$16,$13,$01,$16,$12	; "=......."
@@ -3021,36 +3025,36 @@ D749f	word5	D76d7,"IN",$00,ts_in
 	word5	,"WHO",$02,L4471
 	word5	,"SET",$02,L4483
 	word5	,"CLR",$02,L448a
-	word5	,"H>T",$00,$2f08
-	word5	,"T>H",$00,$3008
-	word5	,"%VAR",$00,$3108
-D759b:	word5	,"((",$00,$3208
-D75a3:	word5	D78fb,"+TO",$00,$3308
-	word5	D759b,"FROM",$00,$3408
-D75b6:	word5	,"))",$00,$3508
-D75be:	word5	D75c6,"U>",$00,$3708
-D75c6:	word5	D75ce,"0>",$00,$3808
-D75ce:	word5	D75d8,"UMIN",$00,$3908
-D75d8:	word5	D7701,"UMAX",$00,$3a08
-D75e2:	word5	D75ea,"D.",$00,$3b08
-D75ea:	word5	D75f2,"U.",$00,$3c08
-D75f2:	word5	D75fa,"B.",$00,$3d08
-D75fa:	word5	D7602,"H.",$00,$3e08
-D7602:	word5	D5d5f,"G.",$00,$4008
-	word5	D75b6,"SEMIT",$00,$4108
-	word5	,"STYPE",$00,$4208
-	word5	,"SP!",$00,$4308
-	word5	,"?S",$00,$4408
+	word5	,"H>T",$00,ts_h_to_t
+	word5	,"T>H",$00,ts_t_to_h
+	word5	,"%VAR",$00,ts_pct_var
+D759b:	word5	,"((",$00,ts_lp_lp
+D75a3:	word5	D78fb,"+TO",$00,ts_plus_to
+	word5	D759b,"FROM",$00,ts_from
+D75b6:	word5	,"))",$00,ts_rp_rp
+D75be:	word5	D75c6,"U>",$00,ts_u_gt
+D75c6:	word5	D75ce,"0>",$00,ts_0_gt
+D75ce:	word5	D75d8,"UMIN",$00,ts_umin
+D75d8:	word5	D7701,"UMAX",$00,ts_umax
+D75e2:	word5	D75ea,"D.",$00,ts_d_dot
+D75ea:	word5	D75f2,"U.",$00,ts_u_dot
+D75f2:	word5	D75fa,"B.",$00,ts_b_dot
+D75fa:	word5	D7602,"H.",$00,ts_h_dot
+D7602:	word5	D5d5f,"G.",$00,ts_g_dot
+	word5	D75b6,"SEMIT",$00,ts_semit
+	word5	,"STYPE",$00,ts_stype
+	word5	,"SP!",$00,ts_sp_bang
+	word5	,"?S",$00,ts_query_s
 	word5	,".S",$00,$4508
-	word5	,"?",$00,$4608
-	word5	,"C?",$00,$4708
-D7648:	word5	,"DUMP",$00,$4808
-D7652:	word5	D76ab,"HERE",$00,$4908
-	word5	D7648,"?PAIR?",$00,$4d08
-	word5	,"!CSP",$00,$4e08
-	word5	,"?CSP",$00,$4f08
-	word5	,"?COMP",$00,$5008
-D7686:	word5	,"?EXEC",$00,$5108
+	word5	,"?",$00,ts_query
+	word5	,"C?",$00,ts_c_query
+D7648:	word5	,"DUMP",$00,ts_dump
+D7652:	word5	D76ab,"HERE",$00,ts_here
+	word5	D7648,"?PAIRS",$00,ts_query_pairs
+	word5	,"!CSP",$00,ts_bang_csp
+	word5	,"?CSP",$00,ts_query_csp
+	word5	,"?COMP",$00,ts_query_comp
+D7686:	word5	,"?EXEC",$00,ts_query_exec
 D7691:	wordi5	D7c7b,"\x80",$02,L46a4	; can't use a NUL in a string in ASL
 	word5	D7686,"ALLOT",$00,$5208
 D76a3:	word5	,"F,",$00,$5408
@@ -3077,12 +3081,12 @@ D7747:	wordi5	D778d,"[COMPILE]",$02,L4c3a
 	word5	,"LFA",$00,$6d08
 	word5	,"LATEST",$00,$6e08
 D7783:	word5	,"LAST",$00,$6b08
-D778d:	word5	D7796,"HEX",$00,$6f08
-D7796:	word5	D77b7,"DECIMAL",$00,$3f08
-	word5	D7783,"OCTAL",$00,$7008
+D778d:	word5	D7796,"HEX",$00,ts_hex
+D7796:	word5	D77b7,"DECIMAL",$00,ts_decimal
+	word5	D7783,"OCTAL",$00,ts_octal
 D77ac:	word5	,"(NUMBER)",$00,ts_p_number
-D77b7:	word5	D78ec,"NUMBER",$00,$7308
-	word5	D77ac,"CONVERT",$00,$7108
+D77b7:	word5	D78ec,"NUMBER",$00,ts_number
+	word5	D77ac,"CONVERT",$00,ts_convert
 	word5	,"DCONVERT",$00,$7408
 D77d8:	word5	,"FCONVERT",$00,$7508
 D77e3:	wordi1	D77ea,"&?",$02,L4d7b
@@ -3112,7 +3116,7 @@ D78c1:	word5	D7652,"LABEL",$02,L51a1
 D78cc:	word5	D78e1,"CODE",$00,$8f08
 D78d6:	word5	D78ae,"CODEC",$00,$9008
 D78e1:	word5	D743e,"ENDCODE",$02,L51bf
-D78ec:	wordi5	D7873,"'V",$00,$2d08
+D78ec:	wordi5	D7873,"'V",$00,ts_quote_v
 D78f4:	wordi5	D7913,":",$02,L51ec
 D78fb:	wordi5	D75be,":C",$02,L51f6
 	wordi5	D78d6,":P",$02,L5200
