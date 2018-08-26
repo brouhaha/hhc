@@ -904,32 +904,34 @@ x_c_query:
 ; DUMP
 x_dump:
 	fcb	$00
-	tag	0,to_r,cr		; 0 >R CR
-L459d:	tag	dup,2dup,h_dot,space	; DUP 2DUP H. SPACE
-	tag	4,bounds		; 4 BOUNDS
-	tag	p_do			; (DO)
-	tag	i,c_at,b_dot		;   I C@ B.
-	tag	p_loop			; (LOOP)
-	tag	space,4,stype,r		; SPACE 4 STYPE R
-	tagrf	p_if,L45b8		; IF
-	tag	query_key_hit		;   ?KEY-HIT
+	tag	0,to_r			; 0 >R
+					; BEGIN
+L459c:	tag	cr			;   CR
+	tag	dup,2dup,h_dot,space	;   DUP 2DUP H. SPACE
+	tag	4,bounds		;   4 BOUNDS
+	tag	p_do			;   (DO)
+	tag	i,c_at,b_dot		;     I C@ B.
+	tag	p_loop			;   (LOOP)
+	tag	space,4,stype,r		;   SPACE 4 STYPE R
 	tagrf	p_if,L45b8		;   IF
-	tag	r_to,falsify,to_r	;     R> FALSIFY >R
+	tag	query_key_hit		;     ?KEY-HIT
+	tagrf	p_if,L45b8		;     IF
+	tag	r_to,falsify,to_r	;       R> FALSIFY >R
+					;     THEN
 					;   THEN
-					; THEN
-L45b8:	tag	r,query_dup		; R ?DUP
-	tagrf	p_notif,L45c6		; NOTIF
-	tag	key			;   KEY
-	literal	$86			;   $86
-	tagrf	p_case,L45c6		;   CASE
-	tag	r_to,drop,key		;     R> DROP KEY
-	tag	dup,to_r		;     DUP >R
-					;   ENDCASE
-					; THEN
+L45b8:	tag	r,query_dup		;   R ?DUP
+	tagrf	p_notif,L45c6		;   NOTIF
+	tag	key			;     KEY
+	literal	$86			;     $86
+	tagrf	p_case,L45c6		;     CASE
+	tag	r_to,drop,key		;       R> DROP KEY
+	tag	dup,to_r		;       DUP >R
+					;     ENDCASE
+					;   THEN
 L45c6:	literal	$0d
-	tagrf	p_case,L45cd		; CASE
-	tag	r_to,2drop,exit		;   R> 2DROP EXIT
-					; ENDCASE
+	tagrf	p_case,L45cd		;   CASE
+	tag	r_to,2drop,exit		;     R> 2DROP EXIT
+					;   ENDCASE
 L45cd:	tag	80H
 	tagrf	p_case,L45d4
 	tag	4,minus
@@ -947,7 +949,7 @@ L45db:	literal $82
 
 L45e2:	tag	drop,4,plus		;   DROP 4 +
 
-L45e5:	tagrr	p_again,L459d		; (AGAIN)
+L45e5:	tagrr	p_again,L459c		; AGAIN
 
 ; HERE
 x_here:
@@ -1438,7 +1440,7 @@ xa_while:
 	fcb	$0c,$8b
 	fcb	$49
 
-xa_repeate:
+xa_repeat:
 	fcb	$00
 	fcb	$aa,$0c,$cc,$49,$0c,$92
 	fcb	$49,$00
@@ -2536,36 +2538,52 @@ x_vlist:
 ; VOCABULARY
 x_vocabulary:
 	fcb	$00
-	fcb	$08,$82,$0c,$e3,$52
-	fcb	$08,$49,$1b,$2f,$3d,$08,$55,$11
-	fcb	$81,$a0,$1b,$08,$55,$08,$0f,$08
-	fcb	$55,$08,$55,$08,$16,$08,$55,$08
-	fcb	$08,$08,$16,$08,$79,$20,$d6,$ff
-	fcb	$08,$08,$08,$0e
+	tag	create			; <BUILDS
+	tag	p_call			; (CALL) x_immediate
+	fdb	x_immediate
+	tag	here,dup,4,plus		; HERE DUP 4 +
+	tag	tag_855			; tag_855 $a081
+	literal	$a081
+	tag	dup,tag_855,current	; DUP tag_855 CURRENT
+	tag	tag_855,tag_855,v_link	; tag_855 tag_855 V-LINK
+	tag	tag_855,to,v_link
+	tag	tag_879
+
+L5712:	jsr	Sffd6
+	tag	to,context
 
 ; DEFINITIONS
 x_definitions:
 	fcb	$00
-	fcb	$08,$0e,$08
-	fcb	$08,$08,$0f
+	tag	context,to,current	; CONTEXT TO CURRENT
 
 ; CHAIN
 x_chain:
 	fcb	$00
-	fcb	$08,$2d,$30,$3d
-	fcb	$08,$0f,$2f,$3d,$16
+	tag	quote_v,3,plus		; 'V 3 +
+	tag	current,4,plus,bang	; CURRENT 4 + !
 
 x_tag_89d:
 	fcb	$00
-	fcb	$1b,$15,$01,$0e,$2f,$3d,$15,$08
-	fcb	$36,$28,$4d,$09,$22,$16
+	tag	dup
+					; BEGIN
+L572d:	tag	at,rp_at,4,plus,at	; @ RP@ 4 + @
+	tag	tag_836,not		;   tag_836 NOT
+	tagrr	p_until,L572d		; UNTIL
+	tag	swap,bang		; SWAP !
 
 ; FORGET
 x_forget:
 	fcb	$00
-	fcb	$08
-	fcb	$62,$08,$0d,$08,$36,$4e,$03,$0f
-	fcb	$00,$30,$3d,$0c,$49,$57
+	tag	tag_862,hdp0,tag_836	; tag_862 HDP0 tag_836
+	tagrf	p_notif,L5744		; NOTIF
+	tag	drop			;   DROP
+	tag	exit
+					; ELSE
+L5744:	tag	3,plus			;   3 +
+	tag	p_call
+	fdb	x_p_forget		;   (FORGET)
+					; THEN
 
 ; (FORGET)
 x_p_forget:
@@ -2681,9 +2699,15 @@ x_iftrue:
 ifend:
 	fcb	$00		; NOP
 
-	fcb	$00
-	fcb	$08,$5d,$1b,$28,$22
-	fcb	$30,$1d,$48,$3a,$4d,$09,$0f,$00
+; consume input stream until and including a character matching TOS
+T5a00:	fcb	$00
+					; BEGIN
+L5a01:	tag	inch,dup,not,swap	;   INCH DUP NOT SWAP
+	tag	3,pick,equal_to,or	;   3 PICK = OR
+	tagrr	p_until,L5a01		; UNTIL
+	tag	drop			; DROP
+	tag	exit
+
 	fcb	$08,$4c
 	cstr	"NO SUCH RAMBANK"
 	fcb	$00,$08,$4c
@@ -2953,53 +2977,59 @@ x_else:
 	fcb	$08,$a3,$52,$aa,$08,$a1
 
 ; backslash
+; comment to end of line
 x_backslash_backslash:
 	fcb	$00
-	fcb	$14,$0d,$0c,$00,$5a
+	literal	$0d			; carriage return
+	tag	p_call
+	fdb	T5a00
 
 ; (
+; comment to close paren
 x_lparen:
 	fcb	$00
-	fcb	$14,$29
-	fcb	$0c,$00,$5a
+	literal	')'
+	tag	p_call
+	fdb	T5a00
 
 ; DOES>
 x_does:
 	fcb	$00
-	fcb	$08,$68,$08,$79
-	fcb	$35,$08,$56,$11,$d6,$ff,$08,$55
+	tag	COMPILE,tag_879		; COMPILE tag_879
+	tag	20h,tag_856		; 20H tag_856
+	literal	Sffd6			; Sffd6
+	tag	tag_855			; tag_855
 
 ; ABORT"
 x_abort_quote:
 	fcb	$00
-	fcb	$08,$68,$08,$4b,$08,$76
+	tag	compile,tag_84b,s_quote	; COMPILE tag_84b S"
 
 ; ?ABORT"
 x_query_abort_quote:
 	fcb	$00
-	fcb	$08,$68,$08,$4c,$08,$76
+	tag	compile,tag_84c,s_quote	; COMPILE tag_84c S"
 
 ; "NOT"
 xa_not:
 	fcb	$00
-	fcb	$35
-	fcb	$a6
+	tag	20h,xor			; $20 XOR
 
 xa_0_equals:
 	fcb	$00
-	fcb	$14,$d0
+	literal	$d0			; $d0 (BNE opcode)
 
 xa_0_less_than:
 	fcb	$00
-	fcb	$14,$10
+	literal	$10			; $10 (BPL opcode)
 
 xa_cs:
 	fcb	$00
-	fcb	$14,$90
+	literal	$90			; $90 (BCC opcode)
 
 xa_vs:
 	fcb	$00
-	fcb	$14,$50
+	literal	$50			; $50 (BVC opcode)
 
 	fcb	$00
 
@@ -3882,7 +3912,7 @@ D7c7b:	wordi5	D7c70,"?ABORT\x22",$02,x_query_abort_quote
 	word5	,"UNTIL,",$02,xa_until
 	word5	,"AGAIN,",$02,xa_again
 	word5	,"WHILE,",$02,xa_while
-	word5	,"REPEAT,",$02,xa_repeate
+	word5	,"REPEAT,",$02,xa_repeat
 
 ; Assembler interface words to nucleus
 	word5	,"PUTTRU",$02,xa_puttru

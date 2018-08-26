@@ -71,7 +71,7 @@ tagrf	macro	tagnum,target
 	endm
 
 rrel	macro	target
-	fcb	*-target
+	fcb	(*-1)-target
 	endm
 
 tagrr	macro	tagnum,target

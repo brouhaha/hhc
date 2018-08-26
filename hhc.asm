@@ -5703,11 +5703,11 @@ x_tag_1a4:
 x_tag_1a5:
 	fcb	$00	; unknown tag $1a5
 	tag	flame_on
-	tag	1
-Tf24d:	literal	$a401		; executer
+Tf24c:	tag	1
+	literal	$a401		; executer
 	literal	$a301		; selecter
 	tag	menu_driver
-	tagrr	p_again,Tf24d
+	tagrr	p_again,Tf24c
 
 	fcb	$00
 
@@ -6249,8 +6249,8 @@ Sfce5:	fcb	$00
 	tag	rec_cnt
 	tag	tag_9e
 	tag	bang
-	tag	rec_cnt
-tfcf3:	tagrf	p_if,tfd36
+tfcf2:	tag	rec_cnt
+	tagrf	p_if,tfd36
 	tag	p_if_its
 	fcb	$81
 	frel	tfcfd
@@ -6300,7 +6300,7 @@ tfd31:	tag	drop
 tfd36:	tag	cr
 	tag	p_dot_quote
 	cstr	"NO ALARMS"
-tfd42:	tagrr	p_until,tfcf3
+tfd42:	tagrr	p_until,tfcf2
 
 
 x_tag_a3:
@@ -6387,8 +6387,8 @@ x_e_dot_t:
 	tag	0
 	tag	tag_9d
 	tag	c_bang
-	tag	key
-tfda0:	tag	p_if_its
+tfd9f:	tag	key
+	tag	p_if_its
 	fcb	$81
 	frel	tfda9
 	tag	minus_1
@@ -6411,7 +6411,7 @@ tfdb7:	tag	dup
 	fdb	Sfc2c
 tfdbb:	literal	$0d
 	tag	equal_to
-	tagrr	p_until,tfda0
+	tagrr	p_until,tfd9f
 	tag	p_call
 	fdb	Sfd5f
 	tag	tag_9f
@@ -6467,15 +6467,14 @@ Sfddf:	fcb	$00
 
 x_show_time:
 	fcb	$00	; SHOW.TIME
-	fcb	$14	; ??? literal, value is next two tags
-tfe1c:	tag	plus
+tfe1b:	literal	$3d
 	tag	6
 	tag	tag_9c
 	tag	c_bang
 	literal	d02df
 	tag	to_r
-	tag	6
-tfe24:	tag	tag_a0
+tfe23:	tag	6
+	tag	tag_a0
 	tag	dup
 	tag	tag_9b
 	tagrf	p_less_if,tfe2f
@@ -6513,10 +6512,10 @@ tfe38:	tag	r
 	tag	minus
 	tag	5
 	tag	greater_than
-	tagrr	p_until,tfe24
+	tagrr	p_until,tfe23
 	tag	r_to
 	tag	drop
-	tagrr	p_again,tfe1c
+	tagrr	p_again,tfe1b
 
 
 x_tag_1bc:
@@ -6598,10 +6597,10 @@ Tfecc:	tag	make
 	tag	2_plus
 	tag	c_bang
 Tfed4:	tag	1
-Tfed5:	literal	$bc01		; executer
+	literal	$bc01		; executer
 	literal	$be01		; selecter
 	tag	menu_driver
-	tagrr	p_again,Tfed5
+	tagrr	p_again,Tfed4
 
 
 Lfede:	fcb	$00
@@ -6696,11 +6695,11 @@ x_tag_1c5:
 	tag	0
 	tag	query_room	; ?ROOM ?ENOUGH-ROOM 1
 	tag	query_enough_room
-	tag	1
-tff83:	literal	$c101		; BEGIN tag 1c1 ; executer
+tff82:	tag	1
+	literal	$c101		; BEGIN tag 1c1 ; executer
 	literal	$c401		; tag 1c4   	; selecter
 	tag	menu_driver	; MENU-DRIVER REPEAT
-	tagrr	p_again,tff83
+	tagrr	p_again,tff82
 
 
 	fcb	$00,$00,$00,$00,$00,$00,$00
