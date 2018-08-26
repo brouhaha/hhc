@@ -79,17 +79,24 @@ Xffb8	equ	$ffb8
 Xffba	equ	$ffba
 Xffbe	equ	$ffbe
 Xffc8	equ	$ffc8
-Sffd3	equ	$ffd3
-Sffd6	equ	$ffd6
-Sffe2	equ	$ffe2
-Sffe5	equ	$ffe5
 
-	org	$4000
+x_scomp		equ	$ffca
+x_ucomp		equ	$ffcd
+x_sleep		equ	$ffd0
+x_setup		equ	$ffd3
+x_dodoes	equ	$ffd6
+x_dolatch	equ	$ffd9
+Sffe2		equ	$ffe2
+Sffe5		equ	$ffe5
+x_getmem	equ	$fff1
+x_getmemt	equ	$fff4
+x_postecb	equ	$fff7
 
-	fcb	$21
+		org	$4000
 
-	fcb	"Copyright FRIENDS AMIS, INC. 1982"
-	fcb	$05,$26,$20,$46,$54,$55
+
+		cstr	"Copyright FRIENDS AMIS, INC. 1982"
+		cstr	"& FTU"
 
 romvect:	fdb	tag_table_8
 
@@ -272,7 +279,7 @@ tag_table_8:
 	def_tgn	$8a3,tag_8a3
 
 L417e:	lda	#$02
-	jsr	Sffd3
+	jsr	x_setup
 	stx	Z62
 	lda	(Z44),y
 	sta	D03e8
@@ -329,7 +336,7 @@ L41e1:	ldx	Z62
 	jmp	(Xffbe)
 
 P41e6:	lda	#$03
-	jsr	Sffd3
+	jsr	x_setup
 	stx	Z62
 	ldx	#$00
 	beq	L41f7
@@ -433,7 +440,7 @@ P4299:	pla
 ; EXECTO
 x_execto:
 	lda	#$01
-	JSR	Sffd3
+	JSR	x_setup
 	JMP	L048f
 
 ; UR@
@@ -635,30 +642,47 @@ x_tag_82c:
 	fcb	$c5
 	mstr	"FORTH"
 
-	fcb	$02
+	fcb	$02,$8e,$00
 
-	fcb	$8e,$00
-	fcb	$20,$12,$57
-	fdb	Z83
-	fcb	$81,$a0,$00,$00,$81,$a0,$00
-	fcb	$00,$b6,$00
+; vocabulary
+	jsr	L5712		; dovec
+	fdb	Z83		; highest
+	fcb	$81,$a0		; dummy
+	fcb	$00,$00		; parent
+	fcb	$81,$a0		; dummy
+	fcb	$00,$00		; v-link
+
+	fcb	$b6,$00
 
 	fcb	$c9
 	mstr	"ASSEMBLE"	; and "R" , but only first eight matched
 
-	fcb	$02
-	fcb	$a9,$00
-	fcb	$20,$12,$57
-	fdb	D7fe2
-	fcb	$81,$a0,$91,$00
-	fcb	$81,$a0,$91,$00,$d8,$66
+	fcb	$02,$a9,$00
+
+; vocabulary for assembler
+	jsr	L5712		; dovec
+	fdb	D7fe2		; highest
+	fcb	$81,$a0		; dummy
+	fcb	$91,$00		; parent
+	fcb	$81,$a0		; dummy
+	fcb	$91,$00		; vlink
+
+	fcb	$d8,$66
 
 	fcb	$c7
 	mstr	"FORWARD"
 
-	fcb	$02,$c3
-	fcb	$00,$20,$12,$57,$00,$00,$81,$a0
-	fcb	$00,$00,$81,$a0,$ac,$00,$00,$04
+	fcb	$02,$c3,$00
+
+; vocabulary for forward references
+	jsr	L5712		; dovec
+	fcb	$00,$00		; highest
+	fcb	$81,$a0		; dummy
+	fcb	$00,$00		; parent
+	fcb	$81,$a0		; dummy
+	fcb	$ac,$00		; vlink
+
+	fcb	$00,$04
 	fcb	$0a,$0c,$1a,$71,$75,$83,$8c,$91
 	fcb	$9b,$a7,$b0,$b4,$c1,$ce,$00,$00
 	fcb	$09,$00,$2a,$00,$18,$44,$08,$00
@@ -1063,7 +1087,7 @@ T471e:	ldx	Z62
 	cstr	"LINE TOO LONG"
 	fcb	$00
 
-S4732:	jsr	Sffd6
+S4732:	jsr	x_dodoes
 	fcb	$79,$08,$08
 	fcb	$08,$2c,$79,$08,$08,$08,$2b,$17
 	fcb	$08,$08,$08,$2a
@@ -1129,7 +1153,7 @@ xa_sec:	fcb	$00
 
 	fcb	$00
 
-S47be:	jsr	Sffd6
+S47be:	jsr	x_dodoes
 	fcb	$08,$2c,$08,$2b,$14,$0c,$39
 	fcb	$4c,$1e,$30,$1d,$14,$ff,$08,$37
 	fcb	$08,$28,$3a,$4c,$13,$32,$08,$33
@@ -1144,7 +1168,7 @@ S47be:	jsr	Sffd6
 	fcb	$0c,$96,$47,$08,$59,$0c,$51,$47
 	fcb	$00
 
-S4821:	jsr	Sffd6
+S4821:	jsr	x_dodoes
 	fcb	$17,$0c,$b3,$47
 	fcb	$00
 
@@ -1364,7 +1388,7 @@ L4947:
 	fcb	$00
 
 S494f:
-	jsr	Sffd6
+	jsr	x_dodoes
 	fcb	$17,$08,$56,$08,$28,$4e
 	fcb	$0a,$08,$49,$08,$2f,$42,$3e,$0c
 	fcb	$47,$49,$32,$08,$57,$08,$56,$0c
@@ -1445,7 +1469,7 @@ xa_repeat:
 	fcb	$aa,$0c,$cc,$49,$0c,$92
 	fcb	$49,$00
 
-S49e2:	jsr	Sffd6
+S49e2:	jsr	x_dodoes
 	fcb	$17,$11,$00
 	fcb	$ff,$3a,$0c,$6f,$47
 
@@ -1499,7 +1523,7 @@ x_ass:
 	tag	context
 	tag	exit
 
-	jsr	Sffd6
+	jsr	x_dodoes
 
 x_tag_804:
 	fcb	$00
@@ -1673,7 +1697,7 @@ x_myself:
 ; NFA    convert PFA to NFA
 x_nfa:
 	lda	#$01
-	JSR	Sffd3
+	JSR	x_setup
 	DEC	Z42+1
 	ldy	#$ff
 L4c5f:	dey
@@ -1690,7 +1714,7 @@ L4c66:	ADC	Z42
 ; PFA    convert LFA to PFA
 x_pfa:
 	lda	#$01
-	JSR	Sffd3
+	JSR	x_setup
 	ldy	#$02
 L4c77:	iny
 	lda	(Z42),y
@@ -1863,7 +1887,7 @@ x_tag_879:
 	fcb	$6a,$79,$4e,$07,$08,$77,$0f,$15
 	fcb	$52,$04,$15,$08,$30,$42,$16,$00
 
-S4e0c:	JSR	Sffd6
+S4e0c:	JSR	x_dodoes
 	fcb	$17,$08,$0a,$15,$3d,$08,$09,$00
 
 ; TT.ORIGIN
@@ -2444,7 +2468,7 @@ x_tag_89a:
 ; selecter for menu
 x_tag_89b:
 	fcb	$00
-	literal	$9a08			; tag 89a (byte-reversed)
+	literal	ts_tag_89a		; tag 89a (byte-reversed)
 	literal D02f3
 	ntag	$16			; !
 	ntag	$33			; 0
@@ -2499,8 +2523,8 @@ R5643:	literal	$a081
 x_tag_800:
 	fcb	$00
 	ntag	$32		; 1
-	literal	$9c08		; tag1 - executer (byte-reversed)
-	literal	$9b08		; tag2 - selecter
+	literal	ts_tag_89c	; tag1 - executer (byte-reversed)
+	literal	ts_tag_89b	; tag2 - selecter
 	ntag	$83		; MENU-DRIVER
 
 T5685:	fcb	$00
@@ -2549,7 +2573,7 @@ x_vocabulary:
 	tag	tag_855,to,v_link
 	tag	tag_879
 
-L5712:	jsr	Sffd6
+L5712:	jsr	x_dodoes
 	tag	to,context
 
 ; DEFINITIONS
@@ -2997,7 +3021,7 @@ x_does:
 	fcb	$00
 	tag	COMPILE,tag_879		; COMPILE tag_879
 	tag	20h,tag_856		; 20H tag_856
-	literal	Sffd6			; Sffd6
+	literal	x_dodoes		; DODOES
 	tag	tag_855			; tag_855
 
 ; ABORT"
@@ -3592,15 +3616,15 @@ D7324:	word5	D7421,"F.",$00,ts_f_dot
 	word5	,"SHOW.TIME",$00,ts_show_time
 	word5	,"INTAPS",$00,ts_intaps
 
-	word5	,"SCOMP",$01,$ffca
-	word5	,"UCOMP",$01,$ffcd
-	word5	,"SLEEP",$01,$ffd0
-	word5	,"SETUP",$01,$ffd3
-	word5	,"DODOES",$01,$ffd6
-	word5	,"DOLATCH",$01,$ffd9
-	word5	,"GETMEM",$01,$fff1
-	word5	,"GETMEMT",$01,$fff4
-	word5	,"POSTECB",$01,$fff7
+	word5	,"SCOMP",$01,x_scomp
+	word5	,"UCOMP",$01,x_ucomp
+	word5	,"SLEEP",$01,x_sleep
+	word5	,"SETUP",$01,x_setup
+	word5	,"DODOES",$01,x_dodoes
+	word5	,"DOLATCH",$01,x_dolatch
+	word5	,"GETMEM",$01,x_getmem
+	word5	,"GETMEMT",$01,x_getmemt
+	word5	,"POSTECB",$01,x_postecb
 
 	word5	,"%REDEF",$01,$0001	; compiler option
 	word5	,"%INT",$01,$0002	; compiler option
