@@ -13,19 +13,39 @@ _ttbase	set	*
 ; label x_foo.
 def_tag	macro	name
 t_name	set	_ttnum
-ts_name	set	(((_ttnum & $ff) << 8) | (_ttnum >> 8))
+	if	_ttnum <= $ff
+ts_name	equ	_ttnum
+	else
+ts_name	equ	((_ttnum >> 8) & $ff) | ((_ttnum & $ff) << 8)
+	endif
 	if	as_hhc_main || ((_ttnum >= $0c0) && (_ttnum <= $0ff)) || (_ttnum >= $200)
 	fdb	x_name
 	endif
 _ttnum	set	_ttnum+1
 	endm
 
-; Inserts a tag into a SNAP word being defined.
-tag	macro	tnum
-	if	t_tnum<$100
-	fcb	t_tnum
+def_tgn	macro	num,name
+	if	(num <> _ttnum)
+	error	"tag number mismatch"
+	endif
+	def_tag	name
+	endm
+
+; Inserts a tag by number into a SNAP word being defined.
+ntag	macro	tnum
+	if	tnum<$100
+	fcb	tnum
 	else
-	fcb	t_tnum>>8,t_tnum&$ff
+	fcb	tnum>>8,tnum&$ff
+	endif
+	endm
+
+; Inserts a tag by name into a SNAP word being defined.
+tag	macro	tname
+	ifnb	tname
+	ntag	t_tname
+	shift
+	tag	ALLARGS
 	endif
 	endm
 
@@ -73,4 +93,8 @@ cstr	macro	str
 	fcb	end-start
 start:	fcb	str
 end:
+	endm
+
+skip2	macro
+	fcb	$2c		; BIT absolute opcode
 	endm

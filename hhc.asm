@@ -35,7 +35,7 @@ z2c	rmb	2
 jnmi	rmb	3	; jmp to NMI handler
 latchs	rmb	1	; shadow of the write-only hardware latch byte
 z32	rmb	1
-z33	rmb	1
+z33	rmb	1	; bit 7 set for LCD on, clear for LCD off
 z34	rmb	1
 z35	rmb	1
 z36	rmb	1
@@ -265,14 +265,15 @@ Sc34f:	lda	#$80
 	inc	z66
 	rts
 
-	lda	#$10
+	lda	#$10		; set slow rom
 
 Sc35f:	ora	latchs
 
-dolatch:	ora	#$08
+dolatch:
+	ora	#$08		; turn on dispon
 	bit	z33
 	bmi	Lc369
-	and	#$f7
+	and	#$f7		; turn off dispon
 Lc369:	sta	latchs
 	sta	latch
 	rts
@@ -296,6 +297,7 @@ Sc383:	lda	latchs
 Sc38b:	lda	latchs
 	jmp	Sc376
 
+; clear bits in latch (and latchs) based on clear bits in A
 Sc390:	and	latchs
 	jmp	dolatch
 
@@ -793,7 +795,7 @@ Lc72d:	stx	zff
 	jsr	Sc340
 	lda	#$80
 	sta	z3d
-	lda	#$9f
+	lda	#$9f		; turn off cpuon, beeper
 	jsr	Sc390
 
 RESET:	cld
@@ -1054,7 +1056,7 @@ Lc948:	cmp	d58fb
 	sta	d58ff
 	jmp	Lc5ac
 
-Sc963:	lda	#$7f
+Sc963:	lda	#$7f		; turn off LCD control
 	jsr	Sc390
 	ldy	#$09
 Lc96a:	lda	d58ff
@@ -1797,8 +1799,10 @@ Lce31:	lda	z42+1
 Lce4a:	adc	#$fb
 	sta	z42+1
 	jsr	Scdca
-	lda	#$07
+
+	lda	#$07		; turn on an external ROM
 	jsr	Sc35f
+
 Lce56:	bcc	Lce6d
 	lda	romaddr+1
 	cmp	#'C'	; must be 'C' for first character of "Copyright"
@@ -1807,7 +1811,7 @@ Lce56:	bcc	Lce6d
 	lda	cspeed
 	and	#$04
 	bne	Lce6d
-	lda	#$ef
+	lda	#$ef	; turn off slow ROM bit
 	jsr	Sc390
 Lce6d:	rts
 
@@ -3721,8 +3725,10 @@ Ld876:	lda	z47
 	bpl	Ld899
 	dey
 Ld899:	sty	z47
-	lda	#$80
+
+	lda	#$80		; enable LCD control
 	jsr	Sc35f
+
 	ldy	#$00
 Ld8a2:	lda	(z42),y
 	ora	(z42+2),y
@@ -3737,7 +3743,7 @@ Ld8a2:	lda	(z42),y
 	lda	z47
 	sta	d5800,x
 Ld8ba:	lda	#$7f
-	jsr	Sc390
+	jsr	Sc390		; turn off LCD control
 	ldx	xsave
 	rts
 
@@ -4869,8 +4875,9 @@ Pe367:	fcb	$00
 x_loc_nxt_cap:
 	fcb	$00	; LOC.NXT.CAP
 	fcb	$33,$14,$41,$14,$3c,$17,$42,$14
-	fcb	$ff,$39,$54,$3b,$a4,$4c,$0c,$11
-	fcb	$2b,$40,$17,$37,$39,$4c,$04,$0f
+	fcb	$ff,$39,$54,$3b,$a4,$4c,$0c
+	literal	cspeed
+	fcb	$17,$37,$39,$4c,$04,$0f
 	fcb	$32,$55,$57
 
 x_loc_prg:
@@ -5808,7 +5815,7 @@ x_fabs:
 	fcb	$00	; FABS
 	fcb	$11,$7f,$ff,$39
 
-x_tag_bf:
+x_f_at:
 	fcb	$00	; F@
 	fcb	$1b,$1b,$5d,$1f,$41,$2b,$6f
 
@@ -6720,11 +6727,11 @@ x_sleep:	jmp	sleep
 x_setup:	jmp	setup
 x_dodoes:	jmp	dodoes
 x_dolatch:	jmp	dolatch
-		jmp	Le123
-		jmp	Le15c
-		jmp	Le174
-		jmp	Le170
-		jmp	Le195
+Sffdc:		jmp	Le123
+Sffdf:		jmp	Le15c
+Sffe2:		jmp	Le174
+Sffe5:		jmp	Le170
+Sffe8:		jmp	Le195
 Sffeb:		jmp	Le1a5
 Sffee:		jmp	Le1b5
 v_getmem:	jmp	getmem
