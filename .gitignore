@@ -2,6 +2,10 @@
 *.bin
 *.lst
 *.p
-*.dsk
-*.po
 *.dis
+*.txt
+*save*
+*.tar.gz
+hhc-dis
+*.dump
+*.py
