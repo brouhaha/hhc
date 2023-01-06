@@ -1,4 +1,4 @@
-all: hhc-check snapforth-check
+all: hhc-check snapforth-check snapbasic-check
 
 %.lst %.p: %.asm hhc.inc hhc_tags.inc
 	asl $< -o $@ -L
