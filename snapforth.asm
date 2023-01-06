@@ -60,9 +60,11 @@ Z83	equ	$83
 Z88	equ	$88
 Zfe	equ	$fe
 Zff	equ	$ff
+tvect0	equ	$021b
 D02f3	equ	$02f3
 tostate	equ	$039f
 D0306	equ	$0306
+D039e	equ	$039e
 D03a0	equ	$03a0
 D03a2	equ	$03a2
 D03a1	equ	$03a1
@@ -86,6 +88,7 @@ x_sleep		equ	$ffd0
 x_setup		equ	$ffd3
 x_dodoes	equ	$ffd6
 x_dolatch	equ	$ffd9
+Sffdc		equ	$ffdc
 Sffe2		equ	$ffe2
 Sffe5		equ	$ffe5
 x_getmem	equ	$fff1
@@ -978,52 +981,68 @@ L45e5:	tagrr	p_again,L459c		; AGAIN
 ; HERE
 x_here:
 	fcb	$00
-	fcb	$08,$34,$08,$0b
+	tag	from,dp			; FROM DP
 
-; -WORD
 x_tag_84b:
 	fcb	$00
-	fcb	$12,$9e,$17,$08,$04,$7e,$7a
+	literal	D039e			; $039e
+	tag	c_at			; C@
+	tag	tag_804			; tag_804
+	tag	cr,p_dot_quote		; CR (.")
 	cstr	"ERROR: "
-	fcb	$24
-	fcb	$79,$78,$7d,$08,$10,$08,$12,$08
-	fcb	$13,$af,$08,$42,$77,$08,$01
+	tag	r_to,count,type,space	; R> COUNT TYPE SPACE
+	tag	tib,in,lastin		; TIB IN LASTIN
+	tag	string_plus,stype	; S+ STYPE
+	tag	beep,quit		; BEEP,QUIT
 
 x_tag_84c:
 	fcb	$00
-	fcb	$4e,$05,$01,$19,$dc,$ff,$24,$79
-	fcb	$3d,$23,$00,$8a,$a2,$ff,$c5,$32
-	fcb	$b0,$29,$c9,$40,$b0,$13,$00,$08
-	fcb	$4b
+	tagrf	p_notif,L4613		; NOTIF
+	tag	jump			;   JUMP
+	fdb	Sffdc
+					; THEN
+L4613:	tag	r_to,count,plus,to_r	; R> COUNT + >R
+
+
+	fcb	$00
+	tag	query_enough_room	; ?ENOUGH-ROOM
+	fcb	$a2,$ff,$c5,$32
+	fcb	$b0,$29,$c9,$40,$b0,$13
+
+	fcb	$00
+	tag	tag_84b
 	cstr	"STACK UNDERFLOW"
+
 	fcb	$00
-	fcb	$08,$4b
+	tag	tag_84b
 	cstr	"STACK OVERFLOW"
+
 	fcb	$00
-	fcb	$08,$4b
+	tag	tag_84b
 	cstr	"SYSTEM ERROR"
 
 ; ?PAIRS
 x_query_pairs:
 	fcb	$00
-	fcb	$48,$08,$4c
+	tag	equal_to
+	tag	tag_84c
 	cstr	"ILLEGAL CONSTRUCTION"
 
 ; !CSP
 x_bang_csp:
 	fcb	$00
-	fcb	$1f,$08,$08,$08,$15
+	tag	sp_at,to,csp		; SP@ TO CSP
 
 ; ?CSP
 x_query_csp:
 	fcb	$00
-	fcb	$1f,$08,$15,$08,$4d
+	tag	sp_at,csp,query_pairs	; SP@ CSP ?PAIRS
 
 ; ?COMP
 x_query_comp:
 	fcb	$00
 	tag	state
-	ntag	$84c
+	tag	tag_84c
 	cstr	"CAN'T EXECUTE"
 
 ; ?EXEC
@@ -1031,68 +1050,94 @@ x_query_exec:
 	fcb	$00
 	tag	state
 	tag	not
-	ntag	$84c
+	tag	tag_84c
 	cstr	"CAN'T COMPILE"
 
 ; null character
 L46a4:	fcb	$00
-	fcb	$27,$0e
+	tag	2_r_to,2drop		; 2R> 2DROP
+
 
 ; ALLOT
 x_allot:
 	fcb	$00
-	fcb	$08,$0b,$3d,$08,$0c,$1c,$37,$3d
-	fcb	$3e,$08,$1c,$01,$17,$4e,$05,$1b
-	fcb	$0c,$80,$59,$08,$08,$08,$0b
+	tag	dp,plus,hdp,over,80h	; DP + HDP OVER 80H
+	tag	plus,minus,maxsz	; + - MAXSZ
+	tag	u_less_than		; U<
+	tagrf	p_notif,L46bb		; NOTIF
+	tag	dup			;   DUP
+	tag	p_call			;   CALL S5980
+	fdb	S5980
+					; THEN
+L46bb:	tag	to,dp			; TO DP
+
 
 x_tag_853:
 	fcb	$00
-	fcb	$08,$28,$28,$08,$4c
+	tag	fwd,not			; FWD NOT
+	tag	tag_84c			; tag_84c
 	cstr	"FORWARD NOT ALLOWED"
+
 
 ; F,
 x_f_comma:
 	fcb	$00
-	fcb	$08,$53,$08,$49,$01,$aa,$2b,$08
-	fcb	$52
+	tag	tag_853,here,f_bang	; tag_853 HERE F! 8 ALLOT
+	tag	8,allot
+
 
 x_tag_855:
 	fcb	$00
-	fcb	$08,$49,$16,$31,$08,$52
+	tag	here,bang,2,allot	; HERE ! 2 ALLOT
+
 
 x_tag_856:
 	fcb	$00
-	fcb	$08,$49,$18,$32,$08,$52
+	tag	here,c_bang,1,allot	; HERE C! 1 ALLOT
+
 
 x_tag_857:
 	fcb	$00
-	fcb	$08,$28,$1a,$4c,$1a,$08,$0d,$3d
-	fcb	$22,$08,$29,$3d,$1c,$18,$42,$08
-	fcb	$49,$1c,$16,$41,$16,$11,$e0,$4e
-	fcb	$33,$08,$08,$08,$28,$00,$0f
+	tag	fwd,query_dup		; FWD ?DUP
+	tagrf	p_if,L4710		; IF
+	tag	hdp0,plus,swap		;   HDP0 + SWAP
+	tag	pct_high,plus,over	;   %HIGH + OVER
+	tag	c_bang,1_plus,here	;   C! 1+ HERE
+	tag	over,bang		;   OVER !
+	tag	2_plus,bang		;   2+ !
+	tag	lit			;   L4ee0
+	fdb	L4ee0
+	tag	0,to,fwd		;   0 TO FWD
+	tag	exit			;   EXIT
+					; THEN
+L4710:	tag	drop			; DROP
+
 
 ; ,
 x_comma:
 	fcb	$00
-	fcb	$33,$08,$57,$08,$55
+	tag	0,tag_857,tag_855	; 0 tag_857 tag_855
 
 ; C,
 x_c_comma:
 	fcb	$00
-	fcb	$31,$08,$57,$08,$56,$00
+	tag	2,tag_857,tag_856	; 2 tag_857 tag_856
+	tag	exit
+
 
 T471e:	ldx	Z62
 	fcb	$00
-	fcb	$08,$4b
+	tag	tag_84b
 	cstr	"LINE TOO LONG"
-	fcb	$00
+	tag	exit
+
 
 S4732:	jsr	x_dodoes
-	fcb	$79,$08,$08
-	fcb	$08,$2c,$79,$08,$08,$08,$2b,$17
-	fcb	$08,$08,$08,$2a
+	tag	count,to,tag_82c	; COUNT TO tag_82c
+	tag	count,to,tag_82b	; COUNT TO tag_82b
+	tag	c_at,to,tag_82a		; C@ TO tag_82a
+	tag	exit
 
-	fcb	$00
 
 xa_mode_immediate:
 	jsr	S4732
@@ -1544,19 +1589,43 @@ x_tag_85a:
 
 x_tag_85b:
 	fcb	$00
-	fcb	$33,$01,$19,$b3,$ff,$00,$08,$4c
+	fcb	$33,$01,$19,$b3,$ff
+
+S4a7b:	fcb	$00
+	tag	tag_84c
 	cstr	"DEVICE INPUT"
 
 x_tag_85c:
 	fcb	$00
-	fcb	$33,$08,$10,$16,$33,$33,$33,$1f
-	fcb	$42,$1b,$08,$18,$01,$4d,$4e,$09
-	fcb	$1c,$11,$00,$87,$48,$0c,$7b,$4a
-	fcb	$0a,$0f,$14,$7f,$39,$14,$0d,$58
-	fcb	$04,$0f,$32,$00,$14,$0a,$58,$03
-	fcb	$52,$15,$2a,$58,$02,$35,$1b,$35
-	fcb	$51,$04,$0f,$38,$00,$1c,$08,$10
-	fcb	$3d,$16,$42,$14,$4f,$67,$53,$39
+	tag	0,tib,bang		; 0 TIB !
+	tag	0,0,0,sp_at		; 0 0 0 SP@
+	tag	1_plus,dup,l2		; 1+ DUP L2
+	tag	rip			; RIP
+	tagrf	p_notif,L4aa4		; NOTIF
+	tag	over			;   OVER
+	literal	$8700
+	tag	equal_to		;   =
+	tag	p_call			;   S4a7b
+	fdb	S4a7b
+					; THEN
+L4aa4:	tag	wait,drop		; WAIT DROP
+	literal	$7f			; $7f AND
+	tag	and
+	literal	$0d			; $0d CASE
+	tagrf	p_case,L4ab0
+	tag	drop,1,exit		;   DROP 1 EXIT
+
+L4ab0:	literal	$0a
+	tagrf	p_case,L4ab6
+	tagrf	p_else,L4ad4
+
+L4ab6:	fcb	$2a,$58,$02,$35,$1b,$35
+	fcb	$51,$04,$0f,$38,$00
+
+L4acb:	fcb	$1c,$08,$10
+	fcb	$3d,$16,$42,$14,$4f,$67
+
+L4ad4:	fcb	$53,$39
 	fcb	$00,$14,$31,$17,$08,$2e,$20,$3a
 	fcb	$11,$fe,$58,$18,$14,$65,$14,$40
 	fcb	$45,$08,$17,$47
@@ -1836,59 +1905,116 @@ x_fconvert:
 	fdb	L4cf2
 	tag	drop
 
-	fcb	$00
-	fcb	$08,$13,$08
-	fcb	$08,$08,$12,$08,$4a,$08,$49,$41
-	fcb	$17
+S4d6e:	fcb	$00
+	tag	lastin,to,in		; LASTIN TO IN
+	tag	minus_word,here		; -WORD HERE
+	tag	2_plus,c_at		; 2+ C@
 
 ; &?
 x_amp_query:
 	fcb	$00
-	fcb	$0c,$6e,$4d,$08,$69
+	tag	p_call
+	fdb	S4d6e
+	tag	_literal_
 
 ; ^?
 x_caret_query:
 	fcb	$00
-	fcb	$0c,$6e,$4d,$14,$1f,$39,$08,$69
+	tag	p_call
+	fdb	S4d6e
+	literal	$1f
+	tag	and
+	tag	_literal_
 
 ; S"
 x_s_quote:
 	fcb	$00
-	fcb	$14,$22,$08,$5e,$08,$49,$17,$42
-	fcb	$08,$52
+	literal	$22
+	tag	word,here,c_at		; WORD HERE C@
+	tag	1_plus,allot		; 1+ ALLOT
 
 ; ."
 x_dot_quote:
 	fcb	$00
-	fcb	$08,$14,$4c,$08,$08
-	fcb	$68,$7a,$08,$76,$52,$09,$14,$22
-	fcb	$08,$5e,$08,$49,$79,$78
+	tag	state			; STATE
+	tagrf	p_if,L4da1		; IF
+	tag	compile			;   COMPILE
+	tag	p_dot_quote,s_quote	;   (.") S"
+	tagrf	p_else,L4da9		; ELSE
+L4da1:	literal	$22			;   $22
+	tag	word,here,count,type	;   WORD HERE COUNT TYPE
+L4da9:					; THEN
 
 x_tag_877:
 	fcb	$00
-	fcb	$08,$0a,$14,$4a,$3d,$23,$79,$08
-	fcb	$65,$4c,$10,$30,$62,$1b,$24,$3d
-	fcb	$17,$23,$13,$1b,$3d,$15,$1c,$17
-	fcb	$52,$17,$1b,$14,$c0,$51,$08,$11
-	fcb	$00,$c0,$24,$38,$52,$09,$14,$c0
-	fcb	$3e,$13,$1b,$15,$24,$17,$23,$22
-	fcb	$43,$3d,$60,$24
+	tag	ur_at			; UR@
+	literal	$4a			; $4a
+	tag	plus,to_r		; + >R
+	tag	count,tag_865		; COUNT tag_865
+	tagrf	p_if,L4dc4		; IF
+	tag	3,times,dup,r_to,plus	;  3 * DUP R> +
+	tag	c_at,to_r		;  C@ >R
+	literal	tvect0			;  TVECT0
+	tag	plus,at			;  + @
+	fcb	$1c,$17			;  OVER C@
+	tagrf	p_else,L4dda		; ELSE
+L4dc4:	tag	dup			;   DUP
+	literal	$c0			;   $80
+	tagrf	p_less_if,L4dd0		;   <IF
+	literal	$c000			;     $c000
+	tag	r_to,falsify		;     R> FALSIFY
+	tagrf	p_else,L4dd8		;   ELSE
+L4dd0:	literal	$c0			;     $c0
+	tag	minus			;     -
+	literal	tvect0			;     TVECT0
+	tag	at,r_to,c_at		;     @ R> C@
+					;   THEN
+L4dd8:	tag	to_r,swap		;   >R SWAP
+					; THEN
+L4dda:	tag	2_times,plus		; 2* +
+	tag	swapdrop,r_to		; SWAPDROP R>
 
 ; CFA   convert PFA to CFA
 x_cfa:
 	fcb	$00
-	fcb	$79,$4e,$09,$08,$77,$4c,$05,$15
-	fcb	$08,$2f,$00,$15
+	tag	count			; COUNT
+	tagrf	p_notif,L4dea		; NOTIF
+	tag	tag_877			;   tag_877
+	tagrf	p_if,L4dea		;   IF
+	tag	at,h_to_t		;     @ H>T
+	tag	exit			;     EXIT
+					;   THEN
+					; THEN
+L4dea:	tag	at			; @
 
 x_tag_879:
 	fcb	$00
-	fcb	$27,$0f,$11,$00,$40,$11,$ff,$7f
-	fcb	$5a,$4e,$03,$08,$2f,$08,$6b,$08
-	fcb	$6a,$79,$4e,$07,$08,$77,$0f,$15
-	fcb	$52,$04,$15,$08,$30,$42,$16,$00
+	tag	2_r_to,drop		; 2R> DROP
+	literal	$4000			; $4000
+	literal	$7fff
+	tag	query_range		; ?RANGE
+	tagrf	p_notif,L4df9		; NOTIF
+	tag	h_to_t			;   H>T
+					; THEN
+L4df9:	tag	last,pfa,count		; LAST PFA COUNT
+	tagrf	p_notif,L4e06		; NOTIF
+	tag	tag_877			;   tag_877
+	tag	drop,at			;   DROP @
+	tagrf	p_else,L4e09		; ELSE -- XXX I'm confused about the
+					;             control flow here, ELSE
+					;             target is beyond the THEN
+					; THEN
+L4e06:	tag	at,t_to_h		; @ T>H
+
+L4e09:	tag	1_plus,bang		; 1+ !
+	tag	exit
+
 
 S4e0c:	JSR	x_dodoes
-	fcb	$17,$08,$0a,$15,$3d,$08,$09,$00
+	tag	c_at,ur_at,at		; C@ UR@ @
+	tag	plus,execto		; + EXECTO
+	tag	exit
+
 
 ; TT.ORIGIN
 x_tt_dot_origin:
@@ -1927,12 +2053,15 @@ x_tag_880:
 ; SHORT.TAGS
 x_short_tags:
 	fcb	$00
-	fcb	$33,$08,$08,$08,$80
+	tag	0,TO,tag_880
 
 ; LONG.TAGS
 x_long_tags:
 	fcb	$00
-	fcb	$32,$08,$08,$08,$80,$00,$13,$33
+	tag	1,TO,tag_880
+
+	fcb	$00
+	fcb	$13,$33
 	fcb	$13,$1b,$54,$08,$0a,$11,$2d,$fe
 	fcb	$3d,$3b,$3d,$15,$1a,$4c,$09,$3b
 	fcb	$16,$14,$3b,$17,$3b,$41,$18,$30
@@ -1961,7 +2090,10 @@ x_capinit:
 	fcb	$08,$2e,$08
 	fcb	$08,$61,$08,$14,$28,$28,$08,$81
 	fcb	$39,$4c,$08,$08,$7d,$08,$56,$32
-	fcb	$08,$56,$00,$08,$4b
+	fcb	$08,$56
+
+L4ee0:	fcb	$00
+	fcb	$08,$4b
 	cstr	"UNDEFINED"
 
 ; ]
@@ -2691,7 +2823,10 @@ x_shrnk:
 	fcb	$3e,$1b,$08,$0c,$5d,$3d,$25,$08
 	fcb	$0c,$3e,$6f,$24,$08,$0d,$11,$9f
 	fcb	$58,$08,$9e,$08,$33,$08,$0c,$33
-	fcb	$08,$52,$00,$37,$3d,$08,$0c,$3e
+	fcb	$08,$52
+
+S5980:	fcb	$00
+	fcb	$37,$3d,$08,$0c,$3e
 	fcb	$1b,$08,$1c,$3d,$01,$81,$14,$10
 	fcb	$3e,$67,$66,$08,$0c,$5d,$3d,$67
 	fcb	$1c,$12,$9c,$15,$13,$01,$1b,$01
@@ -2837,18 +2972,48 @@ x_then:
 	fcb	$10,$39,$4c,$08,$1b,$0c,$2b,$49
 	fcb	$22,$18,$00,$22,$16
 
+
 x_tag_8a2:
 	fcb	$00
-	fcb	$23,$1b,$14,$0f,$39,$3f,$25,$50
-	fcb	$0a,$14,$10,$39,$30,$3a,$08,$a1
-	fcb	$53,$0f,$24,$08,$4d,$00,$08,$50
-	fcb	$08,$49,$33,$08,$56,$14,$13,$00
-	fcb	$08,$50,$08,$49,$33,$08,$55,$30
+	tag	to_r			; >R
+L5bea:	tag	dup			;   DUP
+	literal	$0f			;   $0f
+	tag	and,2_minus,r		;   AND 2- R
+	tagrf	p_eq_if,L5bfa		;   =IF
+	literal	$10
+	tag	and,3,or
+	tag	then
+	tagrr	p_again,L5bea		;   AGAIN
+					; THEN
+L5bfa:	tag	r_to			; R>
+	tag	query_pairs		; ?PAIRS
 
+
+S5bfd:	fcb	$00
+	tag	query_comp,here		; ?COMP HERE
+	tag	0,tag_856		; 0 tag_856
+	literal	$13
+
+
+S5c07:	fcb	$00
+	tag	query_comp,here		; ?COMP HERE
+	tag	0			; 0
+	tag	tag_855			; tag_855
+	tag	3			; 3
+
+
+; used to compile CASE, =IF, <IF, NOTIF, IF, ELSE, UNTIL, AGAIN, ?DO
+; tag that follows the 8a3 tag is the tag to be compiled
 x_tag_8a3:
 	fcb	$00
-	fcb	$24,$79,$08,$56,$23,$0c,$fd,$5b
-	fcb	$00,$34,$23,$24,$41,$23,$25,$1d
+	tag	r_to,count		; R> COUNT
+	tag	tag_856			; tag_856
+	tag	to_r			; >R
+	tag	p_call
+	fdb	S5bfd
+
+	fcb	$00
+	fcb	$34,$23,$24,$41,$23,$25,$1d
 	fcb	$14,$0f,$39,$2c,$3e,$4d,$0a,$25
 	fcb	$1d,$2e,$08,$4d,$08,$49,$24,$41
 	fcb	$1d,$3e,$14,$ff,$4b,$00,$0e,$2e
@@ -2869,25 +3034,25 @@ x_if_its:
 ; DOCASE
 x_docase:
 	fcb	$00
-	fcb	$08
-	fcb	$50,$32
+	tag	query_comp		; ?COMP 1
+	tag	1
 
 ; ENDCASE
 x_endcase:
 	fcb	$00
-	fcb	$32,$08,$a2
+	tag	1,tag_8a2
 
 ; BEGIN
 x_begin:
 	fcb	$00
-	fcb	$08
-	fcb	$50,$08,$49,$2e
+	tag	query_comp,here,5	; ?COMP HERE 5
 
 ; IF.L
 x_if_l:
 	fcb	$00
-	fcb	$08,$68,$01
-	fcb	$18,$0c,$07,$5c
+	tag	compile,query_jump	; COMPILE ?JUMP
+	tag	p_call
+	fdb	S5c07
 
 ; WHILE.L
 x_while_l:
@@ -2906,14 +3071,20 @@ x_until:
 	fcb	$00
 	fcb	$0c,$19
 	fcb	$5c,$4c,$08,$0c,$8d,$5c,$0c,$36
-	fcb	$5c,$00,$08,$a3,$4d,$0c,$43,$5c
+	fcb	$5c,$00
+	tag	tag_8a3
+	tag	p_until		; argument to tag_8a3
+	fcb	$0c,$43,$5c
 
 ; REPEAT AGAIN
 x_repeat:
 	fcb	$00
 	fcb	$0c,$19,$5c,$4c,$0c,$08,$68
 	fcb	$01,$19,$0c,$07,$5c,$0c,$36,$5c
-	fcb	$00,$08,$a3,$53,$0c,$43,$5c
+	fcb	$00
+	tag	tag_8a3
+	tag	p_again		; argument to tag_8a3
+	fcb	$0c,$43,$5c
 
 ; DO
 x_do:
@@ -2923,8 +3094,11 @@ x_do:
 ; ?DO
 x_query_do:
 	fcb	$00
-	fcb	$31,$08,$a3
-	fcb	$59,$42
+	tag	2
+	tag	tag_8a3
+	tag	p_query_do		; argument to tag_8a3
+	tag	1_plus
+
 
 ; LOOP
 x_loop:
@@ -2940,27 +3114,32 @@ x_plus_loop:
 ; CASE
 x_case:
 	fcb	$00
-	fcb	$08,$a3,$58
+	tag	tag_8a3
+	tag	p_case		; argument to tag_8a3
 
 ; =IF
 x_equals_if:
 	fcb	$00
-	fcb	$08,$a3,$50
+	tag	tag_8a3
+	tag	p_eq_if		; argument to tag_8a3
 
 ; <IF
 x_less_than_if:
 	fcb	$00
-	fcb	$08,$a3,$51
+	tag	tag_8a3
+	tag	p_less_if	; argument to tag_8a3
 
 ; NOTIF
 x_not_if:
 	fcb	$00
-	fcb	$08,$a3,$4e
+	tag	tag_8a3
+	tag	p_notif		; argument to tag_8a3
 
 ; IF
 x_if:
 	fcb	$00
-	fcb	$08,$a3,$4c
+	tag	tag_8a3
+	tag	p_if		; argument to tag_8a3
 
 ; CASEWHILE
 x_case_while:
@@ -2998,7 +3177,9 @@ x_while:
 ; ELSE
 x_else:
 	fcb	$00
-	fcb	$08,$a3,$52,$aa,$08,$a1
+	tag	tag_8a3
+	tag	p_else		; argument to tag_8a3
+	fcb	$aa,$08,$a1
 
 ; backslash
 ; comment to end of line
