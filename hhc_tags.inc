@@ -1,3 +1,10 @@
+; Copyright 2008, 2018, 2023 Eric Smith <spacewar@gmail.com>
+; SPDX-License-Identifier: GPL-3.0-only
+
+; I do not claim Copyright on the original HHC binary ROM image,
+; but do claim Copryight on the unique aspects of the reverse-engineered
+; file, including but not limited to labels and comments.
+
 ; tag table 0 (short tags $00..$bf)
 	tt_start $00
 
@@ -178,7 +185,7 @@ t_0_equal	equ	t_not
 	def_tgn	$ac,s_d_times		; SD*
 	def_tgn	$ad,get_local		; GET.LOCAL
 	def_tgn	$ae,set_delay_long	; SET.DELAY.LONG
-	def_tgn	$af,string_plus	; S+
+	def_tgn	$af,string_plus		; S+
 	def_tgn	$b0,updisp		; UPDISP
 	def_tgn	$b1,refresh		; REFRESH
 	def_tgn	$b2,rop			; ROP

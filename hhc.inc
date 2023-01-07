@@ -1,3 +1,10 @@
+; Copyright 2008, 2018, 2023 Eric Smith <spacewar@gmail.com>
+; SPDX-License-Identifier: GPL-3.0-only
+
+; I do not claim Copyright on the original HHC binary ROM image,
+; but do claim Copryight on the unique aspects of the reverse-engineered
+; file, including but not limited to labels and comments.
+
 		ifndef	as_hhc_main
 as_hhc_main	equ	0
 		endif
